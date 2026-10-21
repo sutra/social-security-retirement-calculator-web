@@ -6,6 +6,13 @@ const RETIREMENT_PROFILE_BASE_MONTHS = {
   "female-worker": 50 * MONTHS_IN_YEAR
 };
 
+export const REGION_TEMPLATE_BASE_MONTHS = {
+  "national-default": 180,
+  beijing: 180,
+  shanghai: 180,
+  guangdong: 180
+};
+
 function addMonths(date, months) {
   const result = new Date(date.getTime());
   result.setMonth(result.getMonth() + months);
@@ -34,6 +41,16 @@ export function getRetirementAgeByProfile(profile, delayMonths = 0) {
 
   const safeDelayMonths = Math.max(0, Math.floor(delayMonths));
   return monthsToAge(baseMonths + safeDelayMonths);
+}
+
+export function getMinimumContributionByRegion(regionTemplate, adjustmentMonths = 0) {
+  const baseMonths = REGION_TEMPLATE_BASE_MONTHS[regionTemplate];
+  if (!Number.isFinite(baseMonths)) {
+    throw new Error("unsupported region template");
+  }
+
+  const safeAdjustmentMonths = Math.floor(Number(adjustmentMonths) || 0);
+  return Math.max(0, baseMonths + safeAdjustmentMonths);
 }
 
 export function monthsUntilDate(fromDate, toDate) {

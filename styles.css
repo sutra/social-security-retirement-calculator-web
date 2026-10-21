@@ -54,6 +54,10 @@ input {
   font-weight: 400;
 }
 
+input:read-only {
+  background: #f3f6fb;
+}
+
 select {
   display: block;
   width: 100%;
@@ -140,6 +144,11 @@ button:hover {
 
 .history-item button {
   padding: 6px 10px;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .error {

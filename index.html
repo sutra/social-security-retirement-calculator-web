@@ -83,6 +83,31 @@
           />
         </label>
 
+        <div class="grid-2">
+          <label>
+            地区模板
+            <select id="regionTemplate" name="regionTemplate">
+              <option value="national-default">全国常见基线（180）</option>
+              <option value="beijing">北京模板（180）</option>
+              <option value="shanghai">上海模板（180）</option>
+              <option value="guangdong">广东模板（180）</option>
+              <option value="custom">自定义最低缴费月数</option>
+            </select>
+          </label>
+
+          <label>
+            地方调整（月，可正可负）
+            <input
+              id="regionAdjustmentMonths"
+              name="regionAdjustmentMonths"
+              type="number"
+              min="-120"
+              max="240"
+              value="0"
+            />
+          </label>
+        </div>
+
         <label>
           退休最低缴费要求（月）
           <input

@@ -1,5 +1,6 @@
 import {
   computeRetirementPlan,
+  getMinimumContributionByRegion,
   getRetirementAgeByProfile
 } from "./calculator.js";
 
@@ -10,6 +11,9 @@ const retirementProfileInput = document.getElementById("retirementProfile");
 const delayMonthsInput = document.getElementById("delayMonths");
 const retirementAgeYearsInput = document.getElementById("retirementAgeYears");
 const retirementAgeMonthsInput = document.getElementById("retirementAgeMonths");
+const regionTemplateInput = document.getElementById("regionTemplate");
+const regionAdjustmentMonthsInput = document.getElementById("regionAdjustmentMonths");
+const minimumContributionMonthsInput = document.getElementById("minimumContributionMonths");
 const copyButton = document.getElementById("copy-result");
 const downloadButton = document.getElementById("download-result");
 const historyList = document.getElementById("history-list");
@@ -19,7 +23,6 @@ const HISTORY_KEY = "retirement-calculator-history-v1";
 const HISTORY_LIMIT = 20;
 
 let currentResultText = "";
-let currentPayload = null;
 
 function formatDate(date) {
   const y = date.getFullYear();
@@ -51,6 +54,22 @@ function getProfileText(profile) {
   return "自定义";
 }
 
+function getRegionTemplateText(regionTemplate) {
+  if (regionTemplate === "national-default") {
+    return "全国常见基线";
+  }
+  if (regionTemplate === "beijing") {
+    return "北京模板";
+  }
+  if (regionTemplate === "shanghai") {
+    return "上海模板";
+  }
+  if (regionTemplate === "guangdong") {
+    return "广东模板";
+  }
+  return "自定义";
+}
+
 function applyRetirementAgePreset() {
   const profile = retirementProfileInput.value;
   const delayMonths = Number(delayMonthsInput.value);
@@ -68,14 +87,28 @@ function applyRetirementAgePreset() {
   retirementAgeMonthsInput.value = String(age.months);
 }
 
+function applyRegionTemplatePreset() {
+  const regionTemplate = regionTemplateInput.value;
+  const adjustmentMonths = Number(regionAdjustmentMonthsInput.value);
+
+  const isCustom = regionTemplate === "custom";
+  minimumContributionMonthsInput.readOnly = !isCustom;
+  regionAdjustmentMonthsInput.readOnly = isCustom;
+
+  if (isCustom) {
+    return;
+  }
+
+  const minimumMonths = getMinimumContributionByRegion(regionTemplate, adjustmentMonths);
+  minimumContributionMonthsInput.value = String(minimumMonths);
+}
+
 function readFormData() {
   const birthDateValue = document.getElementById("birthDate").value;
   const retirementAgeYears = Number(retirementAgeYearsInput.value);
   const retirementAgeMonths = Number(retirementAgeMonthsInput.value);
   const contributedMonths = Number(document.getElementById("contributedMonths").value);
-  const minimumContributionMonths = Number(
-    document.getElementById("minimumContributionMonths").value
-  );
+  const minimumContributionMonths = Number(minimumContributionMonthsInput.value);
 
   if (!birthDateValue) {
     throw new Error("请选择出生日期");
@@ -85,6 +118,8 @@ function readFormData() {
     birthDate: new Date(`${birthDateValue}T00:00:00`),
     retirementProfile: retirementProfileInput.value,
     delayMonths: Number(delayMonthsInput.value),
+    regionTemplate: regionTemplateInput.value,
+    regionAdjustmentMonths: Number(regionAdjustmentMonthsInput.value),
     retirementAgeYears,
     retirementAgeMonths,
     contributedMonths,
@@ -103,6 +138,8 @@ function getResultText(payload, plan) {
     `出生日期：${formatDate(payload.birthDate)}`,
     `退休规则：${getProfileText(payload.retirementProfile)}`,
     `弹性延迟退休：${payload.delayMonths} 个月`,
+    `地区模板：${getRegionTemplateText(payload.regionTemplate)}`,
+    `地方调整：${payload.regionAdjustmentMonths} 个月`,
     `退休年龄：${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月`,
     `已累计缴费：${payload.contributedMonths} 个月`,
     `最低缴费要求：${payload.minimumContributionMonths} 个月`,
@@ -144,7 +181,10 @@ function renderHistory() {
       return `
         <li class="history-item">
           <p>${item.time} | ${item.profileText} | 还需 ${item.monthsUntilEligible} 个月</p>
-          <button type="button" class="secondary" data-index="${index}">恢复这条输入</button>
+          <div class="history-actions">
+            <button type="button" class="secondary" data-action="restore" data-index="${index}">恢复这条输入</button>
+            <button type="button" class="secondary" data-action="delete" data-index="${index}">删除</button>
+          </div>
         </li>
       `;
     })
@@ -159,6 +199,8 @@ function pushHistory(payload, plan) {
     birthDate: formatDate(payload.birthDate),
     retirementProfile: payload.retirementProfile,
     delayMonths: payload.delayMonths,
+    regionTemplate: payload.regionTemplate,
+    regionAdjustmentMonths: payload.regionAdjustmentMonths,
     retirementAgeYears: payload.retirementAgeYears,
     retirementAgeMonths: payload.retirementAgeMonths,
     contributedMonths: payload.contributedMonths,
@@ -179,6 +221,7 @@ function renderResult(payload, plan) {
   detailsList.innerHTML = `
     <li>预计达到法定退休年龄日期：<strong>${formatDate(plan.retirementDate)}</strong></li>
     <li>退休规则：<strong>${getProfileText(payload.retirementProfile)}</strong>（延迟 ${payload.delayMonths} 个月）</li>
+    <li>地区模板：<strong>${getRegionTemplateText(payload.regionTemplate)}</strong>（调整 ${payload.regionAdjustmentMonths} 个月）</li>
     <li>距离法定退休年龄：<strong>${plan.monthsUntilAge}</strong> 个月</li>
     <li>距离最低缴费月数：<strong>${plan.monthsToMinContribution}</strong> 个月</li>
     <li>还需继续缴纳社保：<strong>${plan.monthsUntilEligible}</strong> 个月</li>
@@ -194,7 +237,6 @@ form.addEventListener("submit", (event) => {
   try {
     const payload = readFormData();
     const plan = computeRetirementPlan(payload);
-    currentPayload = payload;
     renderResult(payload, plan);
     pushHistory(payload, plan);
   } catch (error) {
@@ -205,6 +247,8 @@ form.addEventListener("submit", (event) => {
 
 retirementProfileInput.addEventListener("change", applyRetirementAgePreset);
 delayMonthsInput.addEventListener("input", applyRetirementAgePreset);
+regionTemplateInput.addEventListener("change", applyRegionTemplatePreset);
+regionAdjustmentMonthsInput.addEventListener("input", applyRegionTemplatePreset);
 
 copyButton.addEventListener("click", async () => {
   if (!currentResultText) {
@@ -250,7 +294,20 @@ historyList.addEventListener("click", (event) => {
   }
 
   const index = Number(target.dataset.index);
-  const item = readHistory()[index];
+  const action = target.dataset.action;
+  if (!Number.isInteger(index) || index < 0) {
+    return;
+  }
+
+  const items = readHistory();
+  if (action === "delete") {
+    items.splice(index, 1);
+    saveHistory(items);
+    renderHistory();
+    return;
+  }
+
+  const item = items[index];
   if (!item) {
     return;
   }
@@ -259,10 +316,13 @@ historyList.addEventListener("click", (event) => {
   retirementProfileInput.value = item.retirementProfile;
   delayMonthsInput.value = String(item.delayMonths);
   applyRetirementAgePreset();
+  regionTemplateInput.value = item.regionTemplate || "custom";
+  regionAdjustmentMonthsInput.value = String(item.regionAdjustmentMonths || 0);
+  applyRegionTemplatePreset();
   retirementAgeYearsInput.value = String(item.retirementAgeYears);
   retirementAgeMonthsInput.value = String(item.retirementAgeMonths);
   document.getElementById("contributedMonths").value = String(item.contributedMonths);
-  document.getElementById("minimumContributionMonths").value = String(item.minimumContributionMonths);
+  minimumContributionMonthsInput.value = String(item.minimumContributionMonths);
 
   form.requestSubmit();
 });
@@ -273,4 +333,5 @@ clearHistoryButton.addEventListener("click", () => {
 });
 
 applyRetirementAgePreset();
+applyRegionTemplatePreset();
 renderHistory();
