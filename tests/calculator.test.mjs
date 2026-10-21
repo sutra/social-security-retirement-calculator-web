@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import {
   computeRetirementPlan,
   getMinimumContributionByRegion,
-  getRetirementAgeByProfile
+  getNationalMinimumContributionMonthsByRetirementDate,
+  getRetirementAgeByProfile,
+  getStatutoryRetirementAgeByPolicy
 } from "../calculator.js";
 
 function d(value) {
@@ -66,6 +68,33 @@ function d(value) {
 {
   const months = getMinimumContributionByRegion("beijing", -24);
   assert.equal(months, 156);
+}
+
+{
+  const age = getStatutoryRetirementAgeByPolicy("male", d("1965-01-15"));
+  assert.equal(age.totalAgeMonths, 721);
+  assert.equal(age.policyDelayMonths, 1);
+}
+
+{
+  const age = getStatutoryRetirementAgeByPolicy("female-worker", d("1975-03-10"));
+  assert.equal(age.totalAgeMonths, 602);
+  assert.equal(age.policyDelayMonths, 2);
+}
+
+{
+  const months = getNationalMinimumContributionMonthsByRetirementDate(d("2029-12-01"));
+  assert.equal(months, 180);
+}
+
+{
+  const months = getNationalMinimumContributionMonthsByRetirementDate(d("2033-01-01"));
+  assert.equal(months, 204);
+}
+
+{
+  const months = getNationalMinimumContributionMonthsByRetirementDate(d("2045-01-01"));
+  assert.equal(months, 240);
 }
 
 console.log("All calculator tests passed.");

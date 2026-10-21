@@ -105,6 +105,15 @@ button:hover {
   padding-left: 18px;
 }
 
+.result h3 {
+  margin: 14px 0 8px;
+}
+
+.result ol {
+  margin: 0;
+  padding-left: 22px;
+}
+
 .actions {
   display: flex;
   gap: 8px;

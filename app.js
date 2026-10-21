@@ -1,7 +1,10 @@
 import {
   computeRetirementPlan,
   getMinimumContributionByRegion,
-  getRetirementAgeByProfile
+  getNationalMinimumContributionMonthsByRetirementDate,
+  getRetirementAgeByProfile,
+  getStatutoryRetirementAgeByPolicy,
+  monthsToAge
 } from "./calculator.js";
 
 const form = document.getElementById("calculator-form");
@@ -18,6 +21,7 @@ const copyButton = document.getElementById("copy-result");
 const downloadButton = document.getElementById("download-result");
 const historyList = document.getElementById("history-list");
 const clearHistoryButton = document.getElementById("clear-history");
+const stepsList = document.getElementById("steps");
 
 const HISTORY_KEY = "retirement-calculator-history-v1";
 const HISTORY_LIMIT = 20;
@@ -39,6 +43,19 @@ function formatNow() {
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   return `${y}-${m}-${d} ${hh}:${mm}`;
+}
+
+function formatDuration(months) {
+  const safeMonths = Math.max(0, Math.floor(months));
+  if (safeMonths < 12) {
+    return `${safeMonths} 个月`;
+  }
+
+  const age = monthsToAge(safeMonths);
+  if (age.months === 0) {
+    return `${age.years} 年`;
+  }
+  return `${age.years} 年 ${age.months} 个月`;
 }
 
 function getProfileText(profile) {
@@ -73,6 +90,7 @@ function getRegionTemplateText(regionTemplate) {
 function applyRetirementAgePreset() {
   const profile = retirementProfileInput.value;
   const delayMonths = Number(delayMonthsInput.value);
+  const birthDateValue = document.getElementById("birthDate").value;
 
   const isCustom = profile === "custom";
   retirementAgeYearsInput.readOnly = !isCustom;
@@ -82,7 +100,14 @@ function applyRetirementAgePreset() {
     return;
   }
 
-  const age = getRetirementAgeByProfile(profile, delayMonths);
+  let age;
+  if (birthDateValue) {
+    const birthDate = new Date(`${birthDateValue}T00:00:00`);
+    const statutory = getStatutoryRetirementAgeByPolicy(profile, birthDate);
+    age = monthsToAge(statutory.totalAgeMonths + Math.max(0, Math.floor(delayMonths)));
+  } else {
+    age = getRetirementAgeByProfile(profile, delayMonths);
+  }
   retirementAgeYearsInput.value = String(age.years);
   retirementAgeMonthsInput.value = String(age.months);
 }
@@ -128,7 +153,40 @@ function readFormData() {
   };
 }
 
-function getResultText(payload, plan) {
+function buildPlanWithPolicy(payload) {
+  let policyRetirement = null;
+  let policyMinimumContributionMonths = null;
+
+  if (payload.retirementProfile !== "custom") {
+    policyRetirement = getStatutoryRetirementAgeByPolicy(payload.retirementProfile, payload.birthDate);
+    const personalDelayMonths = Math.max(0, Math.floor(payload.delayMonths));
+    const finalRetirementAgeMonths = policyRetirement.totalAgeMonths + personalDelayMonths;
+    const finalRetirementAge = monthsToAge(finalRetirementAgeMonths);
+    payload.retirementAgeYears = finalRetirementAge.years;
+    payload.retirementAgeMonths = finalRetirementAge.months;
+  }
+
+  // Need retirement date before finalizing minimum contribution rule for 2030+ ramp-up.
+  const previewPlan = computeRetirementPlan(payload);
+  policyMinimumContributionMonths = getNationalMinimumContributionMonthsByRetirementDate(
+    previewPlan.retirementDate
+  );
+
+  // Preserve region template feature, but never below national policy floor.
+  payload.minimumContributionMonths = Math.max(
+    payload.minimumContributionMonths,
+    policyMinimumContributionMonths
+  );
+
+  const plan = computeRetirementPlan(payload);
+  return {
+    plan,
+    policyRetirement,
+    policyMinimumContributionMonths
+  };
+}
+
+function getResultText(payload, plan, policyRetirement, policyMinimumContributionMonths) {
   const delayedNote = plan.needsDelayedRetirementForContribution
     ? "达到法定退休年龄时缴费月数不足，需要继续缴纳后再退休。"
     : "达到法定退休年龄时，缴费月数预计已满足最低要求。";
@@ -137,18 +195,28 @@ function getResultText(payload, plan) {
     `计算时间：${formatNow()}`,
     `出生日期：${formatDate(payload.birthDate)}`,
     `退休规则：${getProfileText(payload.retirementProfile)}`,
-    `弹性延迟退休：${payload.delayMonths} 个月`,
+    `弹性延迟退休：${formatDuration(payload.delayMonths)}`,
     `地区模板：${getRegionTemplateText(payload.regionTemplate)}`,
-    `地方调整：${payload.regionAdjustmentMonths} 个月`,
+    `地方调整：${formatDuration(Math.abs(payload.regionAdjustmentMonths))}${payload.regionAdjustmentMonths < 0 ? "（减少）" : "（增加）"}`,
     `退休年龄：${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月`,
-    `已累计缴费：${payload.contributedMonths} 个月`,
-    `最低缴费要求：${payload.minimumContributionMonths} 个月`,
+    policyRetirement
+      ? `政策顺延：${formatDuration(policyRetirement.policyDelayMonths)}`
+      : "政策顺延：自定义",
+    `已累计缴费：${formatDuration(payload.contributedMonths)}`,
+    `最低缴费要求：${formatDuration(payload.minimumContributionMonths)}${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}`,
     `预计达到法定退休年龄日期：${formatDate(plan.retirementDate)}`,
-    `距离法定退休年龄：${plan.monthsUntilAge} 个月`,
-    `距离最低缴费月数：${plan.monthsToMinContribution} 个月`,
-    `还需继续缴纳社保：${plan.monthsUntilEligible} 个月`,
-    `届时累计缴费月数：${plan.projectedContributionMonths} 个月`,
-    delayedNote
+    `距离法定退休年龄：${formatDuration(plan.monthsUntilAge)}`,
+    `距离最低缴费月数：${formatDuration(plan.monthsToMinContribution)}`,
+    `还需继续缴纳社保：${formatDuration(plan.monthsUntilEligible)}`,
+    `届时累计缴费月数：${formatDuration(plan.projectedContributionMonths)}`,
+    delayedNote,
+    "",
+    "计算步骤：",
+    `1) 按人员类型与出生年月确定政策退休年龄（含政策顺延）并叠加个人延迟月数，得到 ${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月。`,
+    `2) 用出生日期推算退休日期：${formatDate(plan.retirementDate)}。`,
+    `3) 按退休年份计算国家最低缴费要求${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}，并与地区模板配置取较高值，得到 ${formatDuration(payload.minimumContributionMonths)}。`,
+    `4) 计算 A=距退休年龄 ${formatDuration(plan.monthsUntilAge)}，B=距最低缴费 ${formatDuration(plan.monthsToMinContribution)}。`,
+    `5) 取 max(A, B) = ${formatDuration(plan.monthsUntilEligible)}。`
   ].join("\n");
 }
 
@@ -180,7 +248,7 @@ function renderHistory() {
     .map((item, index) => {
       return `
         <li class="history-item">
-          <p>${item.time} | ${item.profileText} | 还需 ${item.monthsUntilEligible} 个月</p>
+          <p>${item.time} | ${item.profileText} | 还需 ${formatDuration(item.monthsUntilEligible)}</p>
           <div class="history-actions">
             <button type="button" class="secondary" data-action="restore" data-index="${index}">恢复这条输入</button>
             <button type="button" class="secondary" data-action="delete" data-index="${index}">删除</button>
@@ -211,7 +279,26 @@ function pushHistory(payload, plan) {
   renderHistory();
 }
 
-function renderResult(payload, plan) {
+function renderSteps(payload, plan, policyRetirement, policyMinimumContributionMonths) {
+  if (!stepsList) {
+    return;
+  }
+
+  const policyRetireAgeText = `${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月`;
+  const policyDelayText = policyRetirement
+    ? formatDuration(policyRetirement.policyDelayMonths)
+    : "自定义";
+
+  stepsList.innerHTML = `
+    <li>第 1 步：按最新退休政策与人员类型确定基础退休年龄，并计算政策顺延（月）。本次为 <strong>${policyRetireAgeText}</strong>（政策顺延：${policyDelayText}）。</li>
+    <li>第 2 步：根据出生日期 + 退休年龄，得到预计退休日期：<strong>${formatDate(plan.retirementDate)}</strong>。</li>
+    <li>第 3 步：按退休年份套用最低缴费年限规则（2030 年起每年 +6 个月，最高 20 年），并与地区模板值取较高值。本次最低要求：<strong>${formatDuration(payload.minimumContributionMonths)}</strong>${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}。</li>
+    <li>第 4 步：计算两个等待量：A=距退休年龄 <strong>${formatDuration(plan.monthsUntilAge)}</strong>，B=缴费差额 <strong>${formatDuration(plan.monthsToMinContribution)}</strong>。</li>
+    <li>第 5 步：取 max(A, B)，得到还需继续缴纳社保：<strong>${formatDuration(plan.monthsUntilEligible)}</strong>。</li>
+  `;
+}
+
+function renderResult(payload, plan, policyRetirement, policyMinimumContributionMonths) {
   resultBox.hidden = false;
 
   const delayedNote = plan.needsDelayedRetirementForContribution
@@ -220,24 +307,27 @@ function renderResult(payload, plan) {
 
   detailsList.innerHTML = `
     <li>预计达到法定退休年龄日期：<strong>${formatDate(plan.retirementDate)}</strong></li>
-    <li>退休规则：<strong>${getProfileText(payload.retirementProfile)}</strong>（延迟 ${payload.delayMonths} 个月）</li>
+    <li>退休规则：<strong>${getProfileText(payload.retirementProfile)}</strong>（个人延迟 ${formatDuration(payload.delayMonths)}）</li>
     <li>地区模板：<strong>${getRegionTemplateText(payload.regionTemplate)}</strong>（调整 ${payload.regionAdjustmentMonths} 个月）</li>
-    <li>距离法定退休年龄：<strong>${plan.monthsUntilAge}</strong> 个月</li>
-    <li>距离最低缴费月数：<strong>${plan.monthsToMinContribution}</strong> 个月</li>
-    <li>还需继续缴纳社保：<strong>${plan.monthsUntilEligible}</strong> 个月</li>
-    <li>届时累计缴费月数：<strong>${plan.projectedContributionMonths}</strong> 个月</li>
+    <li>政策最低缴费要求：<strong>${formatDuration(payload.minimumContributionMonths)}</strong>${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}</li>
+    <li>距离法定退休年龄：<strong>${formatDuration(plan.monthsUntilAge)}</strong></li>
+    <li>距离最低缴费月数：<strong>${formatDuration(plan.monthsToMinContribution)}</strong></li>
+    <li>还需继续缴纳社保：<strong>${formatDuration(plan.monthsUntilEligible)}</strong></li>
+    <li>届时累计缴费月数：<strong>${formatDuration(plan.projectedContributionMonths)}</strong></li>
     <li>${delayedNote}</li>
   `;
 
-  currentResultText = getResultText(payload, plan);
+  renderSteps(payload, plan, policyRetirement, policyMinimumContributionMonths);
+  currentResultText = getResultText(payload, plan, policyRetirement, policyMinimumContributionMonths);
 }
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   try {
     const payload = readFormData();
-    const plan = computeRetirementPlan(payload);
-    renderResult(payload, plan);
+    const { plan, policyRetirement, policyMinimumContributionMonths } =
+      buildPlanWithPolicy(payload);
+    renderResult(payload, plan, policyRetirement, policyMinimumContributionMonths);
     pushHistory(payload, plan);
   } catch (error) {
     resultBox.hidden = false;
@@ -247,6 +337,7 @@ form.addEventListener("submit", (event) => {
 
 retirementProfileInput.addEventListener("change", applyRetirementAgePreset);
 delayMonthsInput.addEventListener("input", applyRetirementAgePreset);
+document.getElementById("birthDate").addEventListener("change", applyRetirementAgePreset);
 regionTemplateInput.addEventListener("change", applyRegionTemplatePreset);
 regionAdjustmentMonthsInput.addEventListener("input", applyRegionTemplatePreset);
 
