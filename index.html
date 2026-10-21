@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>社保退休缴费月数计算器</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>社保退休缴费月数计算器</h1>
+      <p class="intro">
+        输入你的出生日期、法定退休年龄与已缴费月数，快速估算“还要缴纳多少个月社保才能退休”。
+      </p>
+
+      <form id="calculator-form" class="card">
+        <div class="grid-2">
+          <label>
+            退休规则预设
+            <select id="retirementProfile" name="retirementProfile">
+              <option value="male">男职工（60岁）</option>
+              <option value="female-cadre">女干部（55岁）</option>
+              <option value="female-worker">女工人（50岁）</option>
+              <option value="custom">自定义年龄</option>
+            </select>
+          </label>
+
+          <label>
+            弹性延迟退休（月）
+            <input
+              id="delayMonths"
+              name="delayMonths"
+              type="number"
+              min="0"
+              max="120"
+              value="0"
+            />
+          </label>
+        </div>
+
+        <label>
+          出生日期
+          <input id="birthDate" name="birthDate" type="date" required />
+        </label>
+
+        <div class="grid-2">
+          <label>
+            法定退休年龄（岁）
+            <input
+              id="retirementAgeYears"
+              name="retirementAgeYears"
+              type="number"
+              min="1"
+              max="100"
+              value="60"
+              required
+            />
+          </label>
+
+          <label>
+            法定退休年龄（额外月）
+            <input
+              id="retirementAgeMonths"
+              name="retirementAgeMonths"
+              type="number"
+              min="0"
+              max="11"
+              value="0"
+              required
+            />
+          </label>
+        </div>
+
+        <label>
+          当前已累计缴费（月）
+          <input
+            id="contributedMonths"
+            name="contributedMonths"
+            type="number"
+            min="0"
+            value="120"
+            required
+          />
+        </label>
+
+        <label>
+          退休最低缴费要求（月）
+          <input
+            id="minimumContributionMonths"
+            name="minimumContributionMonths"
+            type="number"
+            min="0"
+            value="180"
+            required
+          />
+        </label>
+
+        <button type="submit">开始计算</button>
+      </form>
+
+      <section id="result" class="card result" hidden>
+        <h2>计算结果</h2>
+        <ul id="details"></ul>
+        <div class="actions">
+          <button id="copy-result" type="button">复制结果</button>
+          <button id="download-result" type="button" class="secondary">下载结果截图</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="history-head">
+          <h2>历史记录</h2>
+          <button id="clear-history" type="button" class="secondary">清空历史</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
