@@ -1,0 +1,35 @@
+# Node.js dependencies
+node_modules/
+
+# Build / coverage outputs
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+
+# Eclipse / IDE
+.project
+.classpath
+.settings/
+.factorypath
+
+# VS Code
+.vscode/
+
+# Misc
+*.swp
+*.swo
