@@ -11,6 +11,13 @@ function d(value) {
   return new Date(`${value}T00:00:00`);
 }
 
+function localDateString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 {
   const plan = computeRetirementPlan({
     birthDate: d("1986-10-19"),
@@ -24,6 +31,7 @@ function d(value) {
   assert.equal(plan.monthsUntilAge, 240);
   assert.equal(plan.monthsToMinContribution, 30);
   assert.equal(plan.monthsUntilEligible, 240);
+  assert.equal(localDateString(plan.minimumContributionReachDate), "2029-04-19");
   assert.equal(plan.needsDelayedRetirementForContribution, false);
 }
 
@@ -40,6 +48,7 @@ function d(value) {
   assert.equal(plan.monthsUntilAge, 0);
   assert.equal(plan.monthsToMinContribution, 80);
   assert.equal(plan.monthsUntilEligible, 80);
+  assert.equal(localDateString(plan.minimumContributionReachDate), "2033-06-19");
   assert.equal(plan.needsDelayedRetirementForContribution, true);
 }
 

@@ -58,6 +58,26 @@ function formatDuration(months) {
   return `${age.years} 年 ${age.months} 个月`;
 }
 
+function formatAgeAtDate(birthDate, targetDate) {
+  if (!(birthDate instanceof Date) || Number.isNaN(birthDate.getTime())) {
+    return "-";
+  }
+  if (!(targetDate instanceof Date) || Number.isNaN(targetDate.getTime())) {
+    return "-";
+  }
+
+  let totalMonths =
+    (targetDate.getFullYear() - birthDate.getFullYear()) * 12 +
+    (targetDate.getMonth() - birthDate.getMonth());
+
+  if (targetDate.getDate() < birthDate.getDate()) {
+    totalMonths -= 1;
+  }
+
+  const age = monthsToAge(Math.max(0, totalMonths));
+  return `${age.years} 岁 ${age.months} 个月`;
+}
+
 function getProfileText(profile) {
   if (profile === "male") {
     return "男职工";
@@ -207,6 +227,7 @@ function getResultText(payload, plan, policyRetirement, policyMinimumContributio
     `预计达到法定退休年龄日期：${formatDate(plan.retirementDate)}`,
     `距离法定退休年龄：${formatDuration(plan.monthsUntilAge)}`,
     `距离最低缴费月数：${formatDuration(plan.monthsToMinContribution)}`,
+    `按连续缴纳预计满足最低缴费日期：${formatDate(plan.minimumContributionReachDate)}（当时年龄：${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}）`,
     `还需继续缴纳社保：${formatDuration(plan.monthsUntilEligible)}`,
     `届时累计缴费月数：${formatDuration(plan.projectedContributionMonths)}`,
     delayedNote,
@@ -215,7 +236,7 @@ function getResultText(payload, plan, policyRetirement, policyMinimumContributio
     `1) 按人员类型与出生年月确定政策退休年龄（含政策顺延）并叠加个人延迟月数，得到 ${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月。`,
     `2) 用出生日期推算退休日期：${formatDate(plan.retirementDate)}。`,
     `3) 按退休年份计算国家最低缴费要求${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}，并与地区模板配置取较高值，得到 ${formatDuration(payload.minimumContributionMonths)}。`,
-    `4) 计算 A=距退休年龄 ${formatDuration(plan.monthsUntilAge)}，B=距最低缴费 ${formatDuration(plan.monthsToMinContribution)}。`,
+    `4) 计算 A=距退休年龄 ${formatDuration(plan.monthsUntilAge)}，B=距最低缴费 ${formatDuration(plan.monthsToMinContribution)}，按连续缴纳推算到达日期为 ${formatDate(plan.minimumContributionReachDate)}（当时年龄 ${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}）。`,
     `5) 取 max(A, B) = ${formatDuration(plan.monthsUntilEligible)}。`
   ].join("\n");
 }
@@ -293,7 +314,7 @@ function renderSteps(payload, plan, policyRetirement, policyMinimumContributionM
     <li>第 1 步：按最新退休政策与人员类型确定基础退休年龄，并计算政策顺延（月）。本次为 <strong>${policyRetireAgeText}</strong>（政策顺延：${policyDelayText}）。</li>
     <li>第 2 步：根据出生日期 + 退休年龄，得到预计退休日期：<strong>${formatDate(plan.retirementDate)}</strong>。</li>
     <li>第 3 步：按退休年份套用最低缴费年限规则（2030 年起每年 +6 个月，最高 20 年），并与地区模板值取较高值。本次最低要求：<strong>${formatDuration(payload.minimumContributionMonths)}</strong>${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}。</li>
-    <li>第 4 步：计算两个等待量：A=距退休年龄 <strong>${formatDuration(plan.monthsUntilAge)}</strong>，B=缴费差额 <strong>${formatDuration(plan.monthsToMinContribution)}</strong>。</li>
+    <li>第 4 步：计算两个等待量：A=距退休年龄 <strong>${formatDuration(plan.monthsUntilAge)}</strong>，B=缴费差额 <strong>${formatDuration(plan.monthsToMinContribution)}</strong>，并按连续缴纳推算满足最低缴费日期为 <strong>${formatDate(plan.minimumContributionReachDate)}</strong>（当时年龄 <strong>${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}</strong>）。</li>
     <li>第 5 步：取 max(A, B)，得到还需继续缴纳社保：<strong>${formatDuration(plan.monthsUntilEligible)}</strong>。</li>
   `;
 }
@@ -312,6 +333,7 @@ function renderResult(payload, plan, policyRetirement, policyMinimumContribution
     <li>政策最低缴费要求：<strong>${formatDuration(payload.minimumContributionMonths)}</strong>${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}</li>
     <li>距离法定退休年龄：<strong>${formatDuration(plan.monthsUntilAge)}</strong></li>
     <li>距离最低缴费月数：<strong>${formatDuration(plan.monthsToMinContribution)}</strong></li>
+    <li>按连续缴纳预计满足最低缴费日期：<strong>${formatDate(plan.minimumContributionReachDate)}</strong>（当时年龄：<strong>${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}</strong>）</li>
     <li>还需继续缴纳社保：<strong>${formatDuration(plan.monthsUntilEligible)}</strong></li>
     <li>届时累计缴费月数：<strong>${formatDuration(plan.projectedContributionMonths)}</strong></li>
     <li>${delayedNote}</li>

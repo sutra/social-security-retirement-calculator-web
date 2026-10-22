@@ -167,18 +167,23 @@ export function computeRetirementPlan({
 
   const safeContributedMonths = Math.max(0, Math.floor(contributedMonths));
   const safeMinimumContributionMonths = Math.max(0, Math.floor(minimumContributionMonths));
+  const safeCurrentDate =
+    currentDate instanceof Date && !Number.isNaN(currentDate.getTime()) ? currentDate : new Date();
 
   const retirementDate = addMonths(birthDate, retirementAgeTotalMonths);
-  const monthsUntilAge = monthsUntilDate(currentDate, retirementDate);
+  const monthsUntilAge = monthsUntilDate(safeCurrentDate, retirementDate);
   const monthsToMinContribution = Math.max(
     0,
     safeMinimumContributionMonths - safeContributedMonths
   );
+  // Assume contribution is paid continuously month by month from current date.
+  const minimumContributionReachDate = addMonths(safeCurrentDate, monthsToMinContribution);
 
   const monthsUntilEligible = Math.max(monthsUntilAge, monthsToMinContribution);
 
   return {
     retirementDate,
+    minimumContributionReachDate,
     monthsUntilAge,
     monthsToMinContribution,
     monthsUntilEligible,
