@@ -18,6 +18,7 @@ const regionTemplateInput = document.getElementById("regionTemplate");
 const regionAdjustmentMonthsInput = document.getElementById("regionAdjustmentMonths");
 const minimumContributionMonthsInput = document.getElementById("minimumContributionMonths");
 const copyButton = document.getElementById("copy-result");
+const copyShareLinkButton = document.getElementById("copy-share-link");
 const downloadButton = document.getElementById("download-result");
 const historyList = document.getElementById("history-list");
 const clearHistoryButton = document.getElementById("clear-history");
@@ -25,8 +26,17 @@ const stepsList = document.getElementById("steps");
 
 const HISTORY_KEY = "retirement-calculator-history-v1";
 const HISTORY_LIMIT = 20;
+const PROFILE_OPTIONS = ["male", "female-cadre", "female-worker", "custom"];
+const REGION_TEMPLATE_OPTIONS = [
+  "national-default",
+  "beijing",
+  "shanghai",
+  "guangdong",
+  "custom"
+];
 
 let currentResultText = "";
+let currentAsOfDateString = "";
 
 function formatDate(date) {
   const y = date.getFullYear();
@@ -43,6 +53,92 @@ function formatNow() {
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   return `${y}-${m}-${d} ${hh}:${mm}`;
+}
+
+function parseDateString(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) {
+    return null;
+  }
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function toSafeNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function buildShareQueryString() {
+  const params = new URLSearchParams();
+  params.set("birthDate", document.getElementById("birthDate").value);
+  params.set("profile", retirementProfileInput.value);
+  params.set("delayMonths", String(toSafeNumber(delayMonthsInput.value, 0)));
+  params.set("regionTemplate", regionTemplateInput.value);
+  params.set("regionAdjustmentMonths", String(toSafeNumber(regionAdjustmentMonthsInput.value, 0)));
+  params.set("contributedMonths", String(toSafeNumber(document.getElementById("contributedMonths").value, 0)));
+  params.set("retirementAgeYears", String(toSafeNumber(retirementAgeYearsInput.value, 0)));
+  params.set("retirementAgeMonths", String(toSafeNumber(retirementAgeMonthsInput.value, 0)));
+  params.set(
+    "minimumContributionMonths",
+    String(toSafeNumber(minimumContributionMonthsInput.value, 0))
+  );
+  params.set("asOf", currentAsOfDateString || formatDate(new Date()));
+  return params.toString();
+}
+
+function updateUrlWithCurrentInputs() {
+  const query = buildShareQueryString();
+  const newUrl = `${window.location.pathname}?${query}`;
+  window.history.replaceState({}, "", newUrl);
+}
+
+function applyInputsFromUrlIfPresent() {
+  const params = new URLSearchParams(window.location.search);
+  const birthDate = params.get("birthDate");
+  if (!birthDate) {
+    return false;
+  }
+
+  const parsedBirthDate = parseDateString(birthDate);
+  if (!parsedBirthDate) {
+    return false;
+  }
+
+  document.getElementById("birthDate").value = birthDate;
+
+  const profile = params.get("profile");
+  retirementProfileInput.value = PROFILE_OPTIONS.includes(profile) ? profile : "male";
+  delayMonthsInput.value = String(toSafeNumber(params.get("delayMonths"), 0));
+
+  const regionTemplate = params.get("regionTemplate");
+  regionTemplateInput.value = REGION_TEMPLATE_OPTIONS.includes(regionTemplate)
+    ? regionTemplate
+    : "national-default";
+  regionAdjustmentMonthsInput.value = String(toSafeNumber(params.get("regionAdjustmentMonths"), 0));
+  document.getElementById("contributedMonths").value = String(
+    toSafeNumber(params.get("contributedMonths"), 0)
+  );
+
+  applyRetirementAgePreset();
+  applyRegionTemplatePreset();
+
+  if (retirementProfileInput.value === "custom") {
+    retirementAgeYearsInput.value = String(toSafeNumber(params.get("retirementAgeYears"), 60));
+    retirementAgeMonthsInput.value = String(toSafeNumber(params.get("retirementAgeMonths"), 0));
+  }
+
+  if (regionTemplateInput.value === "custom") {
+    minimumContributionMonthsInput.value = String(
+      toSafeNumber(params.get("minimumContributionMonths"), 180)
+    );
+  }
+
+  const asOf = params.get("asOf");
+  if (asOf && parseDateString(asOf)) {
+    currentAsOfDateString = asOf;
+  }
+
+  return true;
 }
 
 function formatDuration(months) {
@@ -159,6 +255,9 @@ function readFormData() {
     throw new Error("请选择出生日期");
   }
 
+  const asOfDate = parseDateString(currentAsOfDateString) || new Date();
+  currentAsOfDateString = formatDate(asOfDate);
+
   return {
     birthDate: new Date(`${birthDateValue}T00:00:00`),
     retirementProfile: retirementProfileInput.value,
@@ -169,7 +268,7 @@ function readFormData() {
     retirementAgeMonths,
     contributedMonths,
     minimumContributionMonths,
-    currentDate: new Date()
+    currentDate: asOfDate
   };
 }
 
@@ -346,11 +445,15 @@ function renderResult(payload, plan, policyRetirement, policyMinimumContribution
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   try {
+    if (!currentAsOfDateString) {
+      currentAsOfDateString = formatDate(new Date());
+    }
     const payload = readFormData();
     const { plan, policyRetirement, policyMinimumContributionMonths } =
       buildPlanWithPolicy(payload);
     renderResult(payload, plan, policyRetirement, policyMinimumContributionMonths);
     pushHistory(payload, plan);
+    updateUrlWithCurrentInputs();
   } catch (error) {
     resultBox.hidden = false;
     detailsList.innerHTML = `<li class="error">${error.message}</li>`;
@@ -375,6 +478,20 @@ copyButton.addEventListener("click", async () => {
     alert("结果已复制到剪贴板。");
   } catch (error) {
     alert("复制失败，请检查浏览器权限。");
+  }
+});
+
+copyShareLinkButton.addEventListener("click", async () => {
+  if (!currentAsOfDateString) {
+    currentAsOfDateString = formatDate(new Date());
+  }
+  updateUrlWithCurrentInputs();
+
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    alert("分享链接已复制。对方打开后可直接看到输入参数与计算结果。");
+  } catch (error) {
+    alert("复制分享链接失败，请检查浏览器权限。");
   }
 });
 
@@ -436,6 +553,7 @@ historyList.addEventListener("click", (event) => {
   retirementAgeMonthsInput.value = String(item.retirementAgeMonths);
   document.getElementById("contributedMonths").value = String(item.contributedMonths);
   minimumContributionMonthsInput.value = String(item.minimumContributionMonths);
+  currentAsOfDateString = formatDate(new Date());
 
   form.requestSubmit();
 });
@@ -448,3 +566,7 @@ clearHistoryButton.addEventListener("click", () => {
 applyRetirementAgePreset();
 applyRegionTemplatePreset();
 renderHistory();
+
+if (applyInputsFromUrlIfPresent()) {
+  form.requestSubmit();
+}
