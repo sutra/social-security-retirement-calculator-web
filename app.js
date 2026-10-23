@@ -24,6 +24,7 @@ const historyList = document.getElementById("history-list");
 const clearHistoryButton = document.getElementById("clear-history");
 const stepsList = document.getElementById("steps");
 const confirmModal = document.getElementById("confirm-modal");
+const confirmModalTitle = document.getElementById("confirm-modal-title");
 const confirmModalMessage = document.getElementById("confirm-modal-message");
 const confirmCancelButton = document.getElementById("confirm-cancel");
 const confirmOkButton = document.getElementById("confirm-ok");
@@ -42,6 +43,16 @@ const REGION_TEMPLATE_OPTIONS = [
 let currentResultText = "";
 let confirmAction = null;
 let currentAsOfDateString = "";
+
+const modalDefaults = {
+	title: "确认操作",
+	okText: "确认",
+	cancelText: "取消",
+	showCancel: true,
+	okIsDanger: false,
+	initialFocus: "ok",
+	onConfirm: null
+};
 
 function formatDate(date) {
 	const y = date.getFullYear();
@@ -208,16 +219,55 @@ function getRegionTemplateText(regionTemplate) {
 	return "自定义";
 }
 
-function openConfirmModal(message, onConfirm) {
+function openConfirmModal(message, options = {}) {
+	const {
+		title = modalDefaults.title,
+		okText = modalDefaults.okText,
+		cancelText = modalDefaults.cancelText,
+		showCancel = modalDefaults.showCancel,
+		okIsDanger = modalDefaults.okIsDanger,
+		initialFocus = modalDefaults.initialFocus,
+		onConfirm = modalDefaults.onConfirm
+	} = options;
+
 	confirmAction = onConfirm;
+	confirmModalTitle.textContent = title;
 	confirmModalMessage.textContent = message;
+	confirmOkButton.textContent = okText;
+	confirmCancelButton.textContent = cancelText;
+	confirmCancelButton.hidden = !showCancel;
+	confirmOkButton.classList.toggle("danger", Boolean(okIsDanger));
 	confirmModal.hidden = false;
+
+	const shouldFocusCancel =
+		showCancel &&
+		initialFocus === "cancel" &&
+		!confirmCancelButton.hidden;
+	if (shouldFocusCancel) {
+		confirmCancelButton.focus();
+		return;
+	}
 	confirmOkButton.focus();
 }
 
 function closeConfirmModal() {
 	confirmModal.hidden = true;
+	confirmModalTitle.textContent = modalDefaults.title;
+	confirmOkButton.textContent = modalDefaults.okText;
+	confirmCancelButton.textContent = modalDefaults.cancelText;
+	confirmCancelButton.hidden = false;
+	confirmOkButton.classList.remove("danger");
 	confirmAction = null;
+}
+
+function openNoticeModal(message, options = {}) {
+	const { title = "提示", okText = "知道了" } = options;
+	openConfirmModal(message, {
+		title,
+		okText,
+		showCancel: false,
+		onConfirm: null
+	});
 }
 
 function applyRetirementAgePreset() {
@@ -492,9 +542,9 @@ copyButton.addEventListener("click", async () => {
 
 	try {
 		await navigator.clipboard.writeText(currentResultText);
-		alert("结果已复制到剪贴板。");
+		openNoticeModal("结果已复制到剪贴板。", { title: "复制成功" });
 	} catch (error) {
-		alert("复制失败，请检查浏览器权限。");
+		openNoticeModal("复制失败，请检查浏览器权限。", { title: "复制失败" });
 	}
 });
 
@@ -506,9 +556,11 @@ copyShareLinkButton.addEventListener("click", async () => {
 
 	try {
 		await navigator.clipboard.writeText(window.location.href);
-		alert("分享链接已复制。对方打开后可直接看到输入参数与计算结果。");
+		openNoticeModal("分享链接已复制。对方打开后可直接看到输入参数与计算结果。", {
+			title: "复制成功"
+		});
 	} catch (error) {
-		alert("复制分享链接失败，请检查浏览器权限。");
+		openNoticeModal("复制分享链接失败，请检查浏览器权限。", { title: "复制失败" });
 	}
 });
 
@@ -520,7 +572,7 @@ downloadButton.addEventListener("click", async () => {
 	}
 
 	if (typeof window.html2canvas !== "function") {
-		alert("截图组件未加载，请刷新页面后重试。");
+		openNoticeModal("截图组件未加载，请刷新页面后重试。", { title: "截图失败" });
 		return;
 	}
 
@@ -548,10 +600,17 @@ historyList.addEventListener("click", (event) => {
 
 	const items = readHistory();
 	if (action === "delete") {
-		openConfirmModal("确定删除这条历史记录吗？", () => {
-			items.splice(index, 1);
-			saveHistory(items);
-			renderHistory();
+		openConfirmModal("确定删除这条历史记录吗？", {
+			title: "确认操作",
+			okText: "确认删除",
+			showCancel: true,
+			okIsDanger: true,
+			initialFocus: "cancel",
+			onConfirm: () => {
+				items.splice(index, 1);
+				saveHistory(items);
+				renderHistory();
+			}
 		});
 		return;
 	}
@@ -578,9 +637,16 @@ historyList.addEventListener("click", (event) => {
 });
 
 clearHistoryButton.addEventListener("click", () => {
-	openConfirmModal("确定要清空所有历史记录吗？此操作无法撤销。", () => {
-		localStorage.removeItem(HISTORY_KEY);
-		renderHistory();
+	openConfirmModal("确定要清空所有历史记录吗？此操作无法撤销。", {
+		title: "确认操作",
+		okText: "确认删除",
+		showCancel: true,
+		okIsDanger: true,
+		initialFocus: "cancel",
+		onConfirm: () => {
+			localStorage.removeItem(HISTORY_KEY);
+			renderHistory();
+		}
 	});
 });
 

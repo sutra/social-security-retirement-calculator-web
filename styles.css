@@ -91,6 +91,17 @@ button:hover {
 	background: #0353e9;
 }
 
+button:focus-visible {
+	outline: 3px solid #66a3ff;
+	outline-offset: 2px;
+}
+
+/* Programmatic focus in modal may not match :focus-visible on mouse-triggered open. */
+.modal button:focus {
+	outline: 3px solid #66a3ff;
+	outline-offset: 2px;
+}
+
 .secondary {
 	background: #eef3ff;
 	color: #113fa3;
