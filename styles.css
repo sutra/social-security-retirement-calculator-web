@@ -129,6 +129,37 @@ button:focus-visible {
 	margin: 14px 0 8px;
 }
 
+.share-headline {
+	margin: 6px 0 0;
+	padding: 8px 10px;
+	border-radius: 8px;
+	background: #f3f7ff;
+	color: #113fa3;
+	font-weight: 700;
+}
+
+.share-subtitle {
+	margin: 8px 0 10px;
+	color: #4a5563;
+	font-size: 14px;
+}
+
+.share-generated-at {
+	margin: 0 0 10px;
+	text-align: right;
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.share-disclaimer {
+	margin: 0 0 12px;
+	padding: 8px 10px;
+	border-left: 3px solid #c5d0dc;
+	background: #f8fafc;
+	font-size: 12px;
+	color: #4a5563;
+}
+
 .result ol {
 	margin: 0;
 	padding-left: 22px;

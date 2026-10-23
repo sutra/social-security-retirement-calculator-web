@@ -9,6 +9,10 @@ import {
 
 const form = document.getElementById("calculator-form");
 const resultBox = document.getElementById("result");
+const resultTitle = document.getElementById("result-title");
+const shareHeadline = document.getElementById("share-headline");
+const shareSubtitle = document.getElementById("share-subtitle");
+const shareGeneratedAt = document.getElementById("share-generated-at");
 const detailsList = document.getElementById("details");
 const retirementProfileInput = document.getElementById("retirementProfile");
 const delayMonthsInput = document.getElementById("delayMonths");
@@ -487,6 +491,11 @@ function renderSteps(payload, plan, policyRetirement, policyMinimumContributionM
 
 function renderResult(payload, plan, policyRetirement, policyMinimumContributionMonths) {
 	resultBox.hidden = false;
+	const asOfDateText = currentAsOfDateString || formatDate(new Date());
+	resultTitle.textContent = `社保退休测算结果（截至 ${asOfDateText}）`;
+	shareHeadline.textContent = `预计退休日期：${formatDate(plan.retirementDate)} | 还需继续缴纳：${formatDuration(plan.monthsUntilEligible)} | 届时累计：${formatDuration(plan.projectedContributionMonths)}`;
+	shareSubtitle.textContent = `退休规则：${getProfileText(payload.retirementProfile)} | 地区模板：${getRegionTemplateText(payload.regionTemplate)} | 最低缴费要求：${formatDuration(payload.minimumContributionMonths)}`;
+	shareGeneratedAt.textContent = `生成时间：${formatNow()}`;
 
 	const delayedNote = plan.needsDelayedRetirementForContribution
 		? "达到法定退休年龄时缴费月数不足，需要继续缴纳后再退休。"
@@ -578,7 +587,14 @@ downloadButton.addEventListener("click", async () => {
 
 	const canvas = await window.html2canvas(resultBox, {
 		backgroundColor: "#ffffff",
-		scale: Math.min(2, window.devicePixelRatio || 1)
+		scale: Math.min(2, window.devicePixelRatio || 1),
+		onclone: (clonedDocument) => {
+			const clonedResult = clonedDocument.getElementById("result");
+			const clonedActions = clonedResult?.querySelector(".actions");
+			if (clonedActions instanceof HTMLElement) {
+				clonedActions.style.display = "none";
+			}
+		}
 	});
 	const link = document.createElement("a");
 	link.download = `retirement-result-${Date.now()}.png`;
