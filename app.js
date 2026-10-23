@@ -493,7 +493,7 @@ function renderResult(payload, plan, policyRetirement, policyMinimumContribution
 	resultBox.hidden = false;
 	const asOfDateText = currentAsOfDateString || formatDate(new Date());
 	resultTitle.textContent = `社保退休测算结果（截至 ${asOfDateText}）`;
-	shareHeadline.textContent = `预计退休日期：${formatDate(plan.retirementDate)} | 还需继续缴纳：${formatDuration(plan.monthsUntilEligible)} | 届时累计：${formatDuration(plan.projectedContributionMonths)}`;
+	shareHeadline.textContent = `出生日期：${formatDate(payload.birthDate)} | 预计退休日期：${formatDate(plan.retirementDate)} | 还需继续缴纳：${formatDuration(plan.monthsUntilEligible)}`;
 	shareSubtitle.textContent = `退休规则：${getProfileText(payload.retirementProfile)} | 地区模板：${getRegionTemplateText(payload.regionTemplate)} | 最低缴费要求：${formatDuration(payload.minimumContributionMonths)}`;
 	shareGeneratedAt.textContent = `生成时间：${formatNow()}`;
 
@@ -502,6 +502,7 @@ function renderResult(payload, plan, policyRetirement, policyMinimumContribution
 		: "达到法定退休年龄时，缴费月数预计已满足最低要求。";
 
 	detailsList.innerHTML = `
+		<li>出生日期：<strong>${formatDate(payload.birthDate)}</strong></li>
 		<li>预计达到法定退休年龄日期：<strong>${formatDate(plan.retirementDate)}</strong></li>
 		<li>退休规则：<strong>${getProfileText(payload.retirementProfile)}</strong>（个人延迟 ${formatDuration(payload.delayMonths)}）</li>
 		<li>地区模板：<strong>${getRegionTemplateText(payload.regionTemplate)}</strong>（调整 ${payload.regionAdjustmentMonths} 个月）</li>
