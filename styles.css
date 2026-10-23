@@ -120,6 +120,16 @@ select:focus {
 	grid-template-columns: 1fr 1fr;
 }
 
+/* Let form controls shrink inside grid columns on iOS/Safari. */
+.grid-2 > * {
+	min-width: 0;
+}
+
+input[type="date"] {
+	min-width: 0;
+	max-width: 100%;
+}
+
 button {
 	border: 0;
 	border-radius: 8px;
