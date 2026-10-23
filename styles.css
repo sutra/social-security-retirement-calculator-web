@@ -100,6 +100,15 @@ button:hover {
 	background: #dde7ff;
 }
 
+.danger {
+	background: #fee4e2;
+	color: #b42318;
+}
+
+.danger:hover {
+	background: #fecdca;
+}
+
 .result ul {
 	margin: 0;
 	padding-left: 18px;
@@ -160,6 +169,52 @@ button:hover {
 	gap: 8px;
 }
 
+.modal {
+	position: fixed;
+	inset: 0;
+	z-index: 999;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+}
+
+.modal[hidden] {
+	display: none;
+}
+
+.modal-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.45);
+}
+
+.modal-card {
+	position: relative;
+	z-index: 1;
+	width: min(460px, 100%);
+	background: #fff;
+	border-radius: 12px;
+	border: 1px solid #d9e0e8;
+	padding: 16px;
+	box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+}
+
+.modal-card h3 {
+	margin: 0 0 8px;
+}
+
+.modal-card p {
+	margin: 0;
+	color: #4a5563;
+}
+
+.modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 14px;
+}
+
 .error {
 	color: #b42318;
 	font-weight: 700;
@@ -171,7 +226,8 @@ button:hover {
 	}
 
 	.actions,
-	.history-head {
+	.history-head,
+	.modal-actions {
 		flex-direction: column;
 		align-items: stretch;
 	}

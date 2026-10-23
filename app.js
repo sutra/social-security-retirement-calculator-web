@@ -23,6 +23,10 @@ const downloadButton = document.getElementById("download-result");
 const historyList = document.getElementById("history-list");
 const clearHistoryButton = document.getElementById("clear-history");
 const stepsList = document.getElementById("steps");
+const confirmModal = document.getElementById("confirm-modal");
+const confirmModalMessage = document.getElementById("confirm-modal-message");
+const confirmCancelButton = document.getElementById("confirm-cancel");
+const confirmOkButton = document.getElementById("confirm-ok");
 
 const HISTORY_KEY = "retirement-calculator-history-v1";
 const HISTORY_LIMIT = 20;
@@ -36,6 +40,7 @@ const REGION_TEMPLATE_OPTIONS = [
 ];
 
 let currentResultText = "";
+let confirmAction = null;
 let currentAsOfDateString = "";
 
 function formatDate(date) {
@@ -201,6 +206,18 @@ function getRegionTemplateText(regionTemplate) {
 		return "广东模板";
 	}
 	return "自定义";
+}
+
+function openConfirmModal(message, onConfirm) {
+	confirmAction = onConfirm;
+	confirmModalMessage.textContent = message;
+	confirmModal.hidden = false;
+	confirmOkButton.focus();
+}
+
+function closeConfirmModal() {
+	confirmModal.hidden = true;
+	confirmAction = null;
 }
 
 function applyRetirementAgePreset() {
@@ -371,7 +388,7 @@ function renderHistory() {
 					<p>${item.time} | ${item.profileText} | 还需 ${formatDuration(item.monthsUntilEligible)}</p>
 					<div class="history-actions">
 						<button type="button" class="secondary" data-action="restore" data-index="${index}">恢复这条输入</button>
-						<button type="button" class="secondary" data-action="delete" data-index="${index}">删除</button>
+												<button type="button" class="secondary danger" data-action="delete" data-index="${index}">删除</button>
 					</div>
 				</li>
 			`;
@@ -531,9 +548,11 @@ historyList.addEventListener("click", (event) => {
 
 	const items = readHistory();
 	if (action === "delete") {
-		items.splice(index, 1);
-		saveHistory(items);
-		renderHistory();
+		openConfirmModal("确定删除这条历史记录吗？", () => {
+			items.splice(index, 1);
+			saveHistory(items);
+			renderHistory();
+		});
 		return;
 	}
 
@@ -559,8 +578,32 @@ historyList.addEventListener("click", (event) => {
 });
 
 clearHistoryButton.addEventListener("click", () => {
-	localStorage.removeItem(HISTORY_KEY);
-	renderHistory();
+	openConfirmModal("确定要清空所有历史记录吗？此操作无法撤销。", () => {
+		localStorage.removeItem(HISTORY_KEY);
+		renderHistory();
+	});
+});
+
+confirmCancelButton.addEventListener("click", closeConfirmModal);
+
+confirmOkButton.addEventListener("click", () => {
+	if (typeof confirmAction === "function") {
+		confirmAction();
+	}
+	closeConfirmModal();
+});
+
+confirmModal.addEventListener("click", (event) => {
+	const target = event.target;
+	if (target instanceof HTMLElement && target.dataset.closeModal === "true") {
+		closeConfirmModal();
+	}
+});
+
+document.addEventListener("keydown", (event) => {
+	if (event.key === "Escape" && !confirmModal.hidden) {
+		closeConfirmModal();
+	}
 });
 
 applyRetirementAgePreset();
