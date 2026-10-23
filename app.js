@@ -585,21 +585,26 @@ downloadButton.addEventListener("click", async () => {
 		return;
 	}
 
-	const canvas = await window.html2canvas(resultBox, {
-		backgroundColor: "#ffffff",
-		scale: Math.min(2, window.devicePixelRatio || 1),
-		onclone: (clonedDocument) => {
-			const clonedResult = clonedDocument.getElementById("result");
-			const clonedActions = clonedResult?.querySelector(".actions");
-			if (clonedActions instanceof HTMLElement) {
-				clonedActions.style.display = "none";
-			}
+	const actionsBar = resultBox.querySelector(".actions");
+	const originalDisplay = actionsBar ? actionsBar.style.display : null;
+	if (actionsBar) {
+		actionsBar.style.display = "none";
+	}
+
+	try {
+		const canvas = await window.html2canvas(resultBox, {
+			backgroundColor: "#ffffff",
+			scale: Math.min(2, window.devicePixelRatio || 1)
+		});
+		const link = document.createElement("a");
+		link.download = `retirement-result-${Date.now()}.png`;
+		link.href = canvas.toDataURL("image/png");
+		link.click();
+	} finally {
+		if (actionsBar) {
+			actionsBar.style.display = originalDisplay;
 		}
-	});
-	const link = document.createElement("a");
-	link.download = `retirement-result-${Date.now()}.png`;
-	link.href = canvas.toDataURL("image/png");
-	link.click();
+	}
 });
 
 historyList.addEventListener("click", (event) => {
