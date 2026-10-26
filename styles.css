@@ -37,9 +37,9 @@ body {
 }
 
 .container {
-	max-width: 760px;
-	margin: 0 auto;
-	padding: 24px 16px 48px;
+	width: 100%;
+	margin: 0;
+	padding: clamp(20px, 2vw, 32px) clamp(16px, 3vw, 40px) 56px;
 }
 
 h1 {
@@ -271,6 +271,84 @@ button:focus-visible {
 	margin: 12px 0 0;
 	display: grid;
 	gap: 10px;
+}
+
+@media (min-width: 1200px) {
+	.container {
+		display: grid;
+		grid-template-columns: minmax(480px, 1.08fr) minmax(420px, 1fr);
+		gap: 18px 20px;
+		align-items: start;
+	}
+
+	h1,
+	.intro {
+		grid-column: 1 / -1;
+	}
+
+	#calculator-form {
+		grid-column: 1;
+		margin-top: 0;
+	}
+
+	#result {
+		grid-column: 2;
+		margin-top: 0;
+	}
+
+	/* When result is hidden, place history in the right column to avoid a large empty area. */
+	#result[hidden] + section.card {
+		grid-column: 2;
+		margin-top: 0;
+	}
+
+	.container > section.card:not(.result) {
+		grid-column: 1 / -1;
+	}
+
+	.actions {
+		flex-wrap: wrap;
+	}
+}
+
+@media (min-width: 1680px) {
+	.history-list {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+@media (min-width: 1920px) {
+	.container {
+		grid-template-columns: minmax(430px, 1fr) minmax(520px, 1.08fr) minmax(390px, 0.92fr);
+		gap: 20px;
+	}
+
+	h1,
+	.intro {
+		grid-column: 1 / -1;
+	}
+
+	#calculator-form {
+		grid-column: 1;
+	}
+
+	#result {
+		grid-column: 2;
+	}
+
+	.container > section.card:not(.result) {
+		grid-column: 3;
+		margin-top: 0;
+	}
+
+	/* If result is hidden, let history use the freed middle+right columns. */
+	#result[hidden] + section.card {
+		grid-column: 2 / 4;
+	}
+
+	.history-list {
+		grid-template-columns: 1fr;
+	}
 }
 
 .history-item {
