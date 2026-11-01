@@ -13,7 +13,14 @@ const resultTitle = document.getElementById("result-title");
 const shareHeadline = document.getElementById("share-headline");
 const shareSubtitle = document.getElementById("share-subtitle");
 const shareGeneratedAt = document.getElementById("share-generated-at");
+const resultShareDisclaimer = document.getElementById("result-share-disclaimer");
+const resultAiDisclaimer = document.getElementById("result-ai-disclaimer");
 const detailsList = document.getElementById("details");
+const appAiNoticeText = document.getElementById("app-ai-notice-text");
+const appAiUpdated = document.getElementById("app-ai-updated");
+const policyAiNoticeText = document.getElementById("policy-ai-notice-text");
+const policyAiUpdated = document.getElementById("policy-ai-updated");
+const policyDisclaimer = document.getElementById("policy-disclaimer");
 const retirementProfileInput = document.getElementById("retirementProfile");
 const delayMonthsInput = document.getElementById("delayMonths");
 const retirementAgeYearsInput = document.getElementById("retirementAgeYears");
@@ -43,6 +50,21 @@ const REGION_TEMPLATE_OPTIONS = [
 	"guangdong",
 	"custom"
 ];
+
+const COMPLIANCE_COPY = {
+	appNoticeText:
+		"本页面功能、交互与文案由 AI 辅助生成与整理，内容仅供参考，不构成法律、政策或办事建议。涉及社保办理与个人决策，请以国家及地方主管部门最新正式文件和窗口答复为准，并进行人工复核。",
+	appNoticeUpdatedDate: "2026-10-27",
+	policyNoticeText:
+		"本区为 AI 基于公开资料自动整理，已做显式标识，请以官方原文核验后使用。",
+	policyNoticeUpdatedDate: "2026-10-27",
+	resultShareDisclaimer:
+		"说明：本结果基于用户输入参数进行估算，仅供参考，请以当地社保部门政策口径为准。",
+	resultAiDisclaimer:
+		"AI 声明：本计算结果与下载截图由 AI 辅助生成，仅供参考，不构成法律、政策或办事建议。用于办理或决策前请人工复核，并以官方口径为准。",
+	policyDisclaimer:
+		"本时间线由 AI 基于公开信息自动整理，仅用于政策脉络理解，不构成法律、政策或办事建议。请在发布或决策使用前进行人工复核。具体适用条件、执行口径和地方细则，请以国家及地方人社、医保、税务等部门最新正式文件为准。"
+};
 
 let currentResultText = "";
 let confirmAction = null;
@@ -86,6 +108,30 @@ function parseDateString(value) {
 function toSafeNumber(value, fallback = 0) {
 	const num = Number(value);
 	return Number.isFinite(num) ? num : fallback;
+}
+
+function applyComplianceCopy() {
+	if (appAiNoticeText) {
+		appAiNoticeText.textContent = COMPLIANCE_COPY.appNoticeText;
+	}
+	if (appAiUpdated) {
+		appAiUpdated.textContent = `声明更新：${COMPLIANCE_COPY.appNoticeUpdatedDate}`;
+	}
+	if (policyAiNoticeText) {
+		policyAiNoticeText.textContent = COMPLIANCE_COPY.policyNoticeText;
+	}
+	if (policyAiUpdated) {
+		policyAiUpdated.textContent = `整理日期：${COMPLIANCE_COPY.policyNoticeUpdatedDate}`;
+	}
+	if (resultShareDisclaimer) {
+		resultShareDisclaimer.textContent = COMPLIANCE_COPY.resultShareDisclaimer;
+	}
+	if (resultAiDisclaimer) {
+		resultAiDisclaimer.textContent = COMPLIANCE_COPY.resultAiDisclaimer;
+	}
+	if (policyDisclaimer) {
+		policyDisclaimer.textContent = COMPLIANCE_COPY.policyDisclaimer;
+	}
 }
 
 function buildShareQueryString() {
@@ -401,6 +447,7 @@ function getResultText(payload, plan, policyRetirement, policyMinimumContributio
 		`还需继续缴纳社保：${formatDuration(plan.monthsUntilEligible)}`,
 		`届时累计缴费月数：${formatDuration(plan.projectedContributionMonths)}`,
 		delayedNote,
+		COMPLIANCE_COPY.resultAiDisclaimer,
 		"",
 		"计算步骤：",
 		`1) 按人员类型与出生年月确定政策退休年龄（含政策顺延）并叠加个人延迟月数，得到 ${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月。`,
@@ -517,6 +564,10 @@ function renderResult(payload, plan, policyRetirement, policyMinimumContribution
 
 	renderSteps(payload, plan, policyRetirement, policyMinimumContributionMonths);
 	currentResultText = getResultText(payload, plan, policyRetirement, policyMinimumContributionMonths);
+	// Move focus to result heading for keyboard and screen-reader users after calculation.
+	if (resultTitle) {
+		resultTitle.focus();
+	}
 }
 
 form.addEventListener("submit", (event) => {
@@ -697,6 +748,7 @@ document.addEventListener("keydown", (event) => {
 applyRetirementAgePreset();
 applyRegionTemplatePreset();
 renderHistory();
+applyComplianceCopy();
 
 if (applyInputsFromUrlIfPresent()) {
 	form.requestSubmit();
