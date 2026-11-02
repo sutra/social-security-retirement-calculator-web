@@ -135,6 +135,8 @@ h1 {
 	line-height: 1.45;
 	padding-bottom: 10px;
 	border-bottom: 1px dashed #d5def0;
+	scroll-margin-top: 16px;
+	transition: background-color 220ms ease, box-shadow 220ms ease;
 }
 
 .policy-timeline-list li:last-child {
@@ -142,8 +144,114 @@ h1 {
 	padding-bottom: 0;
 }
 
+#policy-timeline {
+	scroll-margin-top: 16px;
+}
+
+#policy-timeline:target {
+	box-shadow: 0 0 0 3px rgba(111, 141, 255, 0.22), var(--card-shadow);
+	animation: policy-section-target-flash 1.2s ease-out 1;
+}
+
+.policy-timeline-list li:target {
+	background: #f2f7ff;
+	box-shadow: 0 0 0 2px rgba(111, 141, 255, 0.22);
+	border-radius: 8px;
+	padding: 8px 10px 10px;
+	margin: -8px -10px 0;
+	animation: policy-item-target-flash 1.2s ease-out 1;
+}
+
+@keyframes policy-section-target-flash {
+	0% {
+		box-shadow: 0 0 0 5px rgba(111, 141, 255, 0.44), var(--card-shadow);
+	}
+
+	18% {
+		box-shadow: 0 0 0 1px rgba(111, 141, 255, 0.12), var(--card-shadow);
+	}
+
+	36% {
+		box-shadow: 0 0 0 5px rgba(111, 141, 255, 0.4), var(--card-shadow);
+	}
+
+	54% {
+		box-shadow: 0 0 0 1px rgba(111, 141, 255, 0.12), var(--card-shadow);
+	}
+
+	72% {
+		box-shadow: 0 0 0 4px rgba(111, 141, 255, 0.28), var(--card-shadow);
+	}
+
+	100% {
+		box-shadow: 0 0 0 3px rgba(111, 141, 255, 0.22), var(--card-shadow);
+	}
+}
+
+@keyframes policy-item-target-flash {
+	0% {
+		box-shadow: 0 0 0 5px rgba(111, 141, 255, 0.44);
+		background: #eaf2ff;
+	}
+
+	18% {
+		box-shadow: 0 0 0 1px rgba(111, 141, 255, 0.1);
+		background: #f8fbff;
+	}
+
+	36% {
+		box-shadow: 0 0 0 5px rgba(111, 141, 255, 0.4);
+		background: #eaf2ff;
+	}
+
+	54% {
+		box-shadow: 0 0 0 1px rgba(111, 141, 255, 0.1);
+		background: #f8fbff;
+	}
+
+	72% {
+		box-shadow: 0 0 0 4px rgba(111, 141, 255, 0.28);
+		background: #eef5ff;
+	}
+
+	100% {
+		box-shadow: 0 0 0 2px rgba(111, 141, 255, 0.22);
+		background: #f2f7ff;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#policy-timeline:target,
+	.policy-timeline-list li:target {
+		animation: none;
+	}
+}
+
 .policy-item-title {
 	margin: 0 0 4px;
+}
+
+.anchor-link {
+	display: inline-block;
+	margin-left: 6px;
+	color: #5c74b5;
+	text-decoration: none;
+	font-weight: 700;
+	opacity: 0.22;
+	transition: opacity 140ms ease, color 140ms ease;
+}
+
+.anchor-link:hover,
+.anchor-link:focus-visible {
+	opacity: 1;
+	color: #2a4bc7;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.policy-timeline h2:hover .anchor-link,
+.policy-item-title:hover .anchor-link {
+	opacity: 0.85;
 }
 
 .policy-tag {
