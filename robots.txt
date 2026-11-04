@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://retire.oxerr.org/sitemap.xml
