@@ -237,7 +237,11 @@
 					/>
 				</label>
 
-				<button type="submit">开始计算</button>
+				<div class="actions">
+					<button type="submit">开始计算</button>
+					<button type="reset" class="secondary">重置表单</button>
+				</div>
+				<p id="form-notice" class="form-notice" role="status" aria-live="polite" hidden></p>
 			</form>
 
 			<section id="result" class="card result" hidden aria-live="polite" aria-atomic="true">

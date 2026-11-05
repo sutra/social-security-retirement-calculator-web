@@ -531,6 +531,16 @@ button:focus-visible {
 	margin-top: 14px;
 }
 
+.form-notice {
+	margin: 8px 0 0;
+	padding: 7px 10px;
+	border-radius: 8px;
+	border: 1px solid #bfd0ff;
+	background: #edf3ff;
+	font-size: 13px;
+	color: #2344a0;
+}
+
 .history-head {
 	display: flex;
 	align-items: center;

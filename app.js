@@ -34,6 +34,7 @@ const downloadButton = document.getElementById("download-result");
 const historyList = document.getElementById("history-list");
 const clearHistoryButton = document.getElementById("clear-history");
 const stepsList = document.getElementById("steps");
+const formNotice = document.getElementById("form-notice");
 const confirmModal = document.getElementById("confirm-modal");
 const confirmModalTitle = document.getElementById("confirm-modal-title");
 const confirmModalMessage = document.getElementById("confirm-modal-message");
@@ -69,6 +70,7 @@ const COMPLIANCE_COPY = {
 let currentResultText = "";
 let confirmAction = null;
 let currentAsOfDateString = "";
+let formNoticeTimer = null;
 
 const modalDefaults = {
 	title: "确认操作",
@@ -318,6 +320,21 @@ function openNoticeModal(message, options = {}) {
 		showCancel: false,
 		onConfirm: null
 	});
+}
+
+function showFormNotice(message, duration = 1800) {
+	if (!formNotice) {
+		return;
+	}
+	if (formNoticeTimer) {
+		clearTimeout(formNoticeTimer);
+	}
+	formNotice.textContent = message;
+	formNotice.hidden = false;
+	formNoticeTimer = window.setTimeout(() => {
+		formNotice.hidden = true;
+		formNotice.textContent = "";
+	}, duration);
 }
 
 function applyRetirementAgePreset() {
@@ -586,6 +603,24 @@ form.addEventListener("submit", (event) => {
 		resultBox.hidden = false;
 		detailsList.innerHTML = `<li class="error">${error.message}</li>`;
 	}
+});
+
+form.addEventListener("reset", () => {
+	// Wait for native form reset to restore default values before syncing dependent fields.
+	window.setTimeout(() => {
+		currentAsOfDateString = "";
+		currentResultText = "";
+		resultBox.hidden = true;
+		detailsList.innerHTML = "";
+		stepsList.innerHTML = "";
+		shareHeadline.textContent = "";
+		shareSubtitle.textContent = "";
+		shareGeneratedAt.textContent = "";
+		window.history.replaceState({}, "", window.location.pathname);
+		applyRetirementAgePreset();
+		applyRegionTemplatePreset();
+		showFormNotice("已重置");
+	});
 });
 
 retirementProfileInput.addEventListener("change", applyRetirementAgePreset);
