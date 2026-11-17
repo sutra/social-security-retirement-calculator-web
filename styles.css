@@ -762,3 +762,55 @@ button:focus-visible {
 	}
 
 }
+
+.site-footer {
+	margin-top: 20px;
+	padding: 18px 16px 28px;
+	border-top: 1px solid rgba(90, 122, 196, 0.16);
+	background: rgba(255, 255, 255, 0.42);
+}
+
+.site-footer__inner {
+	max-width: 1200px;
+	margin: 0 auto;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.6;
+}
+
+.site-footer__brand {
+	font-size: 0.92rem;
+	font-weight: 800;
+	letter-spacing: 0.3px;
+	color: #2147b4;
+}
+
+.site-footer__meta {
+	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 6px;
+	font-size: 11px;
+	color: #5f6d89;
+}
+
+.site-footer__disclaimer {
+	margin: 8px auto 0;
+	max-width: 760px;
+	font-size: 12px;
+	line-height: 1.6;
+	color: #5a6883;
+}
+
+@media (max-width: 640px) {
+	.site-footer {
+		padding-bottom: 22px;
+	}
+
+	.site-footer__meta {
+		gap: 6px;
+		font-size: 10px;
+	}
+}
