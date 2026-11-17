@@ -1,9 +1,9 @@
 const LOCALE_STORAGE_KEY = "retirement-calculator-locale-v1";
-export const SUPPORTED_LOCALES = ["zh-CN", "en"];
-export const DEFAULT_LOCALE = "zh-CN";
+export const SUPPORTED_LOCALES = ["zh-Hans", "zh-Hant", "en"];
+export const DEFAULT_LOCALE = "zh-Hans";
 
 const TRANSLATIONS = {
-	"zh-CN": {
+	"zh-Hans": {
 		"doc.title": "社保退休缴费月数计算器 | 估算还需缴纳多少个月",
 		"app.title": "社保退休缴费月数计算器",
 		"app.languageLabel": "语言",
@@ -177,6 +177,181 @@ const TRANSLATIONS = {
 		"footer.official": "以官方政策为准",
 		"footer.disclaimer":
 			"具体事项请以当地社保部门发布的正式文件为准，不构成法律、政策或办事建议。"
+	},
+	"zh-Hant": {
+		"doc.title": "社保退休繳費月數計算器 | 估算還需繳納多少個月",
+		"app.title": "社保退休繳費月數計算器",
+		"app.languageLabel": "語言",
+		"app.intro": "輸入出生日期、退休規則和已繳費月數，快速估算還需繼續繳納多少個月社保才能退休。",
+		"app.aiBadge": "AI 輔助",
+		"app.aiNoticeText":
+			"本頁面功能、互動與文案由 AI 輔助生成與整理，內容僅供參考，不構成法律、政策或辦事建議。涉及社保辦理與個人決策，請以國家及地方主管部門最新正式文件和視窗答覆為準，並進行人工覆核。",
+		"app.aiUpdated": "聲明更新：{date}",
+
+		"form.retirementProfile": "退休規則預設",
+		"form.delayMonths": "延遲退休（月）",
+		"form.birthDate": "出生日期",
+		"form.retirementAgeYears": "法定退休年齡（歲）",
+		"form.retirementAgeMonths": "退休年齡（額外月）",
+		"form.contributedMonths": "累計繳費月數",
+		"form.regionTemplate": "地區範本",
+		"form.regionAdjustmentMonths": "地方調整（月，可正可負）",
+		"form.minimumContributionMonths": "退休最低繳費要求（月）",
+		"form.submit": "開始計算",
+		"form.reset": "重設表單",
+		"form.resetNotice": "已重設",
+
+		"profile.maleOption": "男職工（60歲）",
+		"profile.femaleCadreOption": "女幹部（55歲）",
+		"profile.femaleWorkerOption": "女工人（50歲）",
+		"profile.customOption": "自訂年齡",
+		"profile.male": "男職工",
+		"profile.female-cadre": "女幹部",
+		"profile.female-worker": "女工人",
+		"profile.custom": "自訂",
+
+		"region.nationalDefaultOption": "全國常見基線（180）",
+		"region.beijingOption": "北京範本（180）",
+		"region.shanghaiOption": "上海範本（180）",
+		"region.guangdongOption": "廣東範本（180）",
+		"region.customOption": "自訂最低繳費月數",
+		"region.national-default": "全國常見基線",
+		"region.beijing": "北京範本",
+		"region.shanghai": "上海範本",
+		"region.guangdong": "廣東範本",
+		"region.custom": "自訂",
+
+		"result.title": "計算結果",
+		"result.titleAsOf": "社保退休測算結果（截至 {date}）",
+		"result.shareHeadline":
+			"出生日期：{birthDate} | 預計退休日期：{retirementDate} | 還需繼續繳納：{remaining}",
+		"result.shareSubtitle":
+			"退休規則：{profile} | 地區範本：{region} | 最低繳費要求：{minContribution}",
+		"result.generatedAt": "產生時間：{time}",
+		"result.shareDisclaimer":
+			"說明：本結果基於使用者輸入參數進行估算，僅供參考，請以當地社保部門政策口徑為準。",
+		"result.aiDisclaimer":
+			"AI 聲明：本計算結果與下載截圖由 AI 輔助生成，僅供參考，不構成法律、政策或辦事建議。用於辦理或決策前請人工覆核，並以官方口徑為準。",
+		"result.stepsHeading": "計算步驟",
+		"result.copy": "複製結果",
+		"result.copyLink": "複製分享連結",
+		"result.download": "下載結果截圖",
+		"result.delayedNote": "達到法定退休年齡時繳費月數不足，需要繼續繳納後再退休。",
+		"result.onTimeNote": "達到法定退休年齡時，繳費月數預計已滿足最低要求。",
+		"result.nationalBaseline": "（國家基線 {duration}）",
+
+		"result.detail.birthDate": "出生日期：",
+		"result.detail.retirementDate": "預計達到法定退休年齡日期：",
+		"result.detail.profile": "退休規則：",
+		"result.detail.personalDelay": "（個人延遲 {duration}）",
+		"result.detail.regionTemplate": "地區範本：",
+		"result.detail.regionAdjustment": "（調整 {months} 個月）",
+		"result.detail.minRequirement": "政策最低繳費要求：",
+		"result.detail.monthsUntilAge": "距離法定退休年齡：",
+		"result.detail.monthsToMin": "距離最低繳費月數：",
+		"result.detail.reachDate": "按連續繳納預計滿足最低繳費日期：",
+		"result.detail.ageAtReach": "（當時年齡：{age}）",
+		"result.detail.remaining": "還需繼續繳納社保：",
+		"result.detail.projected": "屆時累計繳費月數：",
+
+		"steps.1":
+			"第 1 步：按最新退休政策與人員類型確定基礎退休年齡，並計算政策順延（月）。本次為 <strong>{age}</strong>（政策順延：{delay}）。",
+		"steps.2":
+			"第 2 步：根據出生日期 + 退休年齡，得到預計退休日期：<strong>{date}</strong>。",
+		"steps.3":
+			"第 3 步：按退休年份套用最低繳費年限規則（2030 年起每年 +6 個月，最高 20 年），並與地區範本值取較高值。本次最低要求：<strong>{minContribution}</strong>{baseline}。",
+		"steps.4":
+			"第 4 步：計算兩個等待量：A=距退休年齡 <strong>{untilAge}</strong>，B=繳費差額 <strong>{untilMin}</strong>，並按連續繳納推算滿足最低繳費日期為 <strong>{reachDate}</strong>（當時年齡 <strong>{ageAtReach}</strong>）。",
+		"steps.5":
+			"第 5 步：取 max(A, B)，得到還需繼續繳納社保：<strong>{remaining}</strong>。",
+
+		"copyText.heading": "社保退休繳費月數計算結果",
+		"copyText.time": "計算時間：{time}",
+		"copyText.birthDate": "出生日期：{date}",
+		"copyText.profile": "退休規則：{profile}",
+		"copyText.delay": "彈性延遲退休：{duration}",
+		"copyText.region": "地區範本：{region}",
+		"copyText.adjustment": "地方調整：{duration}{dir}",
+		"copyText.adjustmentDecrease": "（減少）",
+		"copyText.adjustmentIncrease": "（增加）",
+		"copyText.retirementAge": "退休年齡：{age}",
+		"copyText.policyDelay": "政策順延：{delay}",
+		"copyText.contributed": "已累計繳費：{duration}",
+		"copyText.minContribution": "最低繳費要求：{duration}{baseline}",
+		"copyText.retirementDate": "預計達到法定退休年齡日期：{date}",
+		"copyText.untilAge": "距離法定退休年齡：{duration}",
+		"copyText.untilMin": "距離最低繳費月數：{duration}",
+		"copyText.reachDate": "按連續繳納預計滿足最低繳費日期：{date}（當時年齡：{age}）",
+		"copyText.remaining": "還需繼續繳納社保：{duration}",
+		"copyText.projected": "屆時累計繳費月數：{duration}",
+		"copyText.stepsTitle": "計算步驟：",
+		"copyText.step1":
+			"1) 按人員類型與出生年月確定政策退休年齡（含政策順延）並疊加個人延遲月數，得到 {age}。",
+		"copyText.step2": "2) 用出生日期推算退休日期：{date}。",
+		"copyText.step3":
+			"3) 按退休年份計算國家最低繳費要求{baseline}，並與地區範本配置取較高值，得到 {minContribution}。",
+		"copyText.step4":
+			"4) 計算 A=距退休年齡 {untilAge}，B=距最低繳費 {untilMin}，按連續繳納推算到達日期為 {reachDate}（當時年齡 {ageAtReach}）。",
+		"copyText.step5": "5) 取 max(A, B) = {remaining}。",
+
+		"history.title": "歷史記錄",
+		"history.clear": "清空歷史",
+		"history.empty": "暫無記錄",
+		"history.itemSummary": "{time} | {profile} | 還需 {remaining}",
+		"history.restore": "恢復這條輸入",
+		"history.delete": "刪除",
+
+		"policy.title": "中國社保政策變化（養老相關）",
+		"policy.aiBadge": "AI整理內容",
+		"policy.aiNoticeText": "本區為 AI 基於公開資料自動整理，已做顯式標識，請以官方原文核驗後使用。",
+		"policy.aiUpdated": "整理日期：{date}",
+		"policy.meta": "里程碑時間線（簡版）：聚焦每一輪政策的核心變化與制度意義。",
+		"policy.tag.guofa": "國發",
+		"policy.legend.guofa": "國務院文件",
+		"policy.tag.guobanfa": "國辦發",
+		"policy.legend.guobanfa": "國務院辦公廳文件",
+		"policy.tag.ministry": "部門規章",
+		"policy.legend.ministry": "部委規範文件",
+		"policy.tag.plan": "改革方案",
+		"policy.legend.plan": "改革配套方案",
+		"policy.tag.decision": "決定類",
+		"policy.legend.decision": "全國人大常委會決定",
+		"policy.tag.pilot": "試點",
+		"policy.legend.pilot": "先行先試安排",
+		"policy.disclaimer":
+			"本時間線由 AI 基於公開資訊自動整理，僅用於政策脈絡理解，不構成法律、政策或辦事建議。請在發佈或決策使用前進行人工覆核。具體適用條件、執行口徑和地方細則，請以國家及地方人社、醫保、稅務等部門最新正式文件為準。",
+
+		"modal.title": "確認操作",
+		"modal.defaultMessage": "確定執行該操作嗎？",
+		"modal.cancel": "取消",
+		"modal.confirm": "確認",
+		"modal.confirmDelete": "確認刪除",
+		"modal.noticeTitle": "提示",
+		"modal.noticeOk": "知道了",
+		"modal.deleteOne": "確定刪除這條歷史記錄嗎？",
+		"modal.clearAll": "確定要清空所有歷史記錄嗎？此操作無法撤銷。",
+		"modal.copySuccessTitle": "複製成功",
+		"modal.copyFailTitle": "複製失敗",
+		"modal.copyResultSuccess": "結果已複製到剪貼簿。",
+		"modal.copyResultFail": "複製失敗，請檢查瀏覽器權限。",
+		"modal.copyLinkSuccess": "分享連結已複製。對方開啟後可直接看到輸入參數與計算結果。",
+		"modal.copyLinkFail": "複製分享連結失敗，請檢查瀏覽器權限。",
+		"modal.screenshotFailTitle": "截圖失敗",
+		"modal.screenshotUnavailable": "截圖元件未載入，請重新整理頁面後重試。",
+
+		"error.birthDateRequired": "請選擇出生日期",
+		"error.calculateFirst": "請先完成一次計算。",
+
+		"unit.monthsOnly": "{months} 個月",
+		"unit.yearsOnly": "{years} 年",
+		"unit.yearsMonths": "{years} 年 {months} 個月",
+		"unit.age": "{years} 歲 {months} 個月",
+
+		"footer.ai": "AI 輔助估算",
+		"footer.reference": "僅供參考",
+		"footer.official": "以官方政策為準",
+		"footer.disclaimer":
+			"具體事項請以當地社保部門發佈的正式文件為準，不構成法律、政策或辦事建議。"
 	},
 	en: {
 		"doc.title": "Social Security Retirement Contribution Calculator",
@@ -371,8 +546,16 @@ function normalizeLocale(locale) {
 	if (lower.startsWith("en")) {
 		return "en";
 	}
+	if (
+		lower.startsWith("zh-hant") ||
+		lower.startsWith("zh-tw") ||
+		lower.startsWith("zh-hk") ||
+		lower.startsWith("zh-mo")
+	) {
+		return "zh-Hant";
+	}
 	if (lower.startsWith("zh")) {
-		return "zh-CN";
+		return "zh-Hans";
 	}
 	return DEFAULT_LOCALE;
 }
