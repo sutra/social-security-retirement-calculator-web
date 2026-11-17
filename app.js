@@ -6,7 +6,9 @@ import {
 	getStatutoryRetirementAgeByPolicy,
 	monthsToAge
 } from "./calculator.js";
+import { applyStaticTranslations, getLocale, setLocale, t } from "./i18n.js";
 
+const localeSelect = document.getElementById("locale-select");
 const form = document.getElementById("calculator-form");
 const resultBox = document.getElementById("result");
 const resultTitle = document.getElementById("result-title");
@@ -52,32 +54,18 @@ const REGION_TEMPLATE_OPTIONS = [
 	"custom"
 ];
 
-const COMPLIANCE_COPY = {
-	appNoticeText:
-		"本页面功能、交互与文案由 AI 辅助生成与整理，内容仅供参考，不构成法律、政策或办事建议。涉及社保办理与个人决策，请以国家及地方主管部门最新正式文件和窗口答复为准，并进行人工复核。",
+const COMPLIANCE_DATES = {
 	appNoticeUpdatedDate: "2026-10-27",
-	policyNoticeText:
-		"本区为 AI 基于公开资料自动整理，已做显式标识，请以官方原文核验后使用。",
-	policyNoticeUpdatedDate: "2026-10-27",
-	resultShareDisclaimer:
-		"说明：本结果基于用户输入参数进行估算，仅供参考，请以当地社保部门政策口径为准。",
-	resultAiDisclaimer:
-		"AI 声明：本计算结果与下载截图由 AI 辅助生成，仅供参考，不构成法律、政策或办事建议。用于办理或决策前请人工复核，并以官方口径为准。",
-	policyDisclaimer:
-		"本时间线由 AI 基于公开信息自动整理，仅用于政策脉络理解，不构成法律、政策或办事建议。请在发布或决策使用前进行人工复核。具体适用条件、执行口径和地方细则，请以国家及地方人社、医保、税务等部门最新正式文件为准。"
+	policyNoticeUpdatedDate: "2026-10-27"
 };
 
 let currentResultText = "";
+let lastRenderedState = null;
 let confirmAction = null;
 let currentAsOfDateString = "";
 let formNoticeTimer = null;
 
 const modalDefaults = {
-	title: "确认操作",
-	okText: "确认",
-	cancelText: "取消",
-	showCancel: true,
-	okIsDanger: false,
 	initialFocus: "ok",
 	onConfirm: null
 };
@@ -114,25 +102,29 @@ function toSafeNumber(value, fallback = 0) {
 
 function applyComplianceCopy() {
 	if (appAiNoticeText) {
-		appAiNoticeText.textContent = COMPLIANCE_COPY.appNoticeText;
+		appAiNoticeText.textContent = t("app.aiNoticeText");
 	}
 	if (appAiUpdated) {
-		appAiUpdated.textContent = `声明更新：${COMPLIANCE_COPY.appNoticeUpdatedDate}`;
+		appAiUpdated.textContent = t("app.aiUpdated", {
+			date: COMPLIANCE_DATES.appNoticeUpdatedDate
+		});
 	}
 	if (policyAiNoticeText) {
-		policyAiNoticeText.textContent = COMPLIANCE_COPY.policyNoticeText;
+		policyAiNoticeText.textContent = t("policy.aiNoticeText");
 	}
 	if (policyAiUpdated) {
-		policyAiUpdated.textContent = `整理日期：${COMPLIANCE_COPY.policyNoticeUpdatedDate}`;
+		policyAiUpdated.textContent = t("policy.aiUpdated", {
+			date: COMPLIANCE_DATES.policyNoticeUpdatedDate
+		});
 	}
 	if (resultShareDisclaimer) {
-		resultShareDisclaimer.textContent = COMPLIANCE_COPY.resultShareDisclaimer;
+		resultShareDisclaimer.textContent = t("result.shareDisclaimer");
 	}
 	if (resultAiDisclaimer) {
-		resultAiDisclaimer.textContent = COMPLIANCE_COPY.resultAiDisclaimer;
+		resultAiDisclaimer.textContent = t("result.aiDisclaimer");
 	}
 	if (policyDisclaimer) {
-		policyDisclaimer.textContent = COMPLIANCE_COPY.policyDisclaimer;
+		policyDisclaimer.textContent = t("policy.disclaimer");
 	}
 }
 
@@ -151,6 +143,7 @@ function buildShareQueryString() {
 		String(toSafeNumber(minimumContributionMonthsInput.value, 0))
 	);
 	params.set("asOf", currentAsOfDateString || formatDate(new Date()));
+	params.set("lang", getLocale());
 	return params.toString();
 }
 
@@ -212,14 +205,14 @@ function applyInputsFromUrlIfPresent() {
 function formatDuration(months) {
 	const safeMonths = Math.max(0, Math.floor(months));
 	if (safeMonths < 12) {
-		return `${safeMonths} 个月`;
+		return t("unit.monthsOnly", { months: safeMonths });
 	}
 
 	const age = monthsToAge(safeMonths);
 	if (age.months === 0) {
-		return `${age.years} 年`;
+		return t("unit.yearsOnly", { years: age.years });
 	}
-	return `${age.years} 年 ${age.months} 个月`;
+	return t("unit.yearsMonths", { years: age.years, months: age.months });
 }
 
 function formatAgeAtDate(birthDate, targetDate) {
@@ -239,45 +232,45 @@ function formatAgeAtDate(birthDate, targetDate) {
 	}
 
 	const age = monthsToAge(Math.max(0, totalMonths));
-	return `${age.years} 岁 ${age.months} 个月`;
+	return t("unit.age", { years: age.years, months: age.months });
 }
 
 function getProfileText(profile) {
 	if (profile === "male") {
-		return "男职工";
+		return t("profile.male");
 	}
 	if (profile === "female-cadre") {
-		return "女干部";
+		return t("profile.female-cadre");
 	}
 	if (profile === "female-worker") {
-		return "女工人";
+		return t("profile.female-worker");
 	}
-	return "自定义";
+	return t("profile.custom");
 }
 
 function getRegionTemplateText(regionTemplate) {
 	if (regionTemplate === "national-default") {
-		return "全国常见基线";
+		return t("region.national-default");
 	}
 	if (regionTemplate === "beijing") {
-		return "北京模板";
+		return t("region.beijing");
 	}
 	if (regionTemplate === "shanghai") {
-		return "上海模板";
+		return t("region.shanghai");
 	}
 	if (regionTemplate === "guangdong") {
-		return "广东模板";
+		return t("region.guangdong");
 	}
-	return "自定义";
+	return t("region.custom");
 }
 
 function openConfirmModal(message, options = {}) {
 	const {
-		title = modalDefaults.title,
-		okText = modalDefaults.okText,
-		cancelText = modalDefaults.cancelText,
-		showCancel = modalDefaults.showCancel,
-		okIsDanger = modalDefaults.okIsDanger,
+		title = t("modal.title"),
+		okText = t("modal.confirm"),
+		cancelText = t("modal.cancel"),
+		showCancel = true,
+		okIsDanger = false,
 		initialFocus = modalDefaults.initialFocus,
 		onConfirm = modalDefaults.onConfirm
 	} = options;
@@ -304,16 +297,16 @@ function openConfirmModal(message, options = {}) {
 
 function closeConfirmModal() {
 	confirmModal.hidden = true;
-	confirmModalTitle.textContent = modalDefaults.title;
-	confirmOkButton.textContent = modalDefaults.okText;
-	confirmCancelButton.textContent = modalDefaults.cancelText;
+	confirmModalTitle.textContent = t("modal.title");
+	confirmOkButton.textContent = t("modal.confirm");
+	confirmCancelButton.textContent = t("modal.cancel");
 	confirmCancelButton.hidden = false;
 	confirmOkButton.classList.remove("danger");
 	confirmAction = null;
 }
 
 function openNoticeModal(message, options = {}) {
-	const { title = "提示", okText = "知道了" } = options;
+	const { title = t("modal.noticeTitle"), okText = t("modal.noticeOk") } = options;
 	openConfirmModal(message, {
 		title,
 		okText,
@@ -386,7 +379,7 @@ function readFormData() {
 	const minimumContributionMonths = Number(minimumContributionMonthsInput.value);
 
 	if (!birthDateValue) {
-		throw new Error("请选择出生日期");
+		throw new Error(t("error.birthDateRequired"));
 	}
 
 	const asOfDate = parseDateString(currentAsOfDateString) || new Date();
@@ -441,37 +434,65 @@ function buildPlanWithPolicy(payload) {
 
 function getResultText(payload, plan, policyRetirement, policyMinimumContributionMonths) {
 	const delayedNote = plan.needsDelayedRetirementForContribution
-		? "达到法定退休年龄时缴费月数不足，需要继续缴纳后再退休。"
-		: "达到法定退休年龄时，缴费月数预计已满足最低要求。";
+		? t("result.delayedNote")
+		: t("result.onTimeNote");
+	const baseline = Number.isFinite(policyMinimumContributionMonths)
+		? t("result.nationalBaseline", { duration: formatDuration(policyMinimumContributionMonths) })
+		: "";
+	const retirementAgeText = t("unit.age", {
+		years: payload.retirementAgeYears,
+		months: payload.retirementAgeMonths
+	});
+	const policyDelayText = policyRetirement
+		? formatDuration(policyRetirement.policyDelayMonths)
+		: t("profile.custom");
+	const reachDateText = formatDate(plan.minimumContributionReachDate);
+	const ageAtReachText = formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate);
+
 	return [
-		"社保退休缴费月数计算结果",
-		`计算时间：${formatNow()}`,
-		`出生日期：${formatDate(payload.birthDate)}`,
-		`退休规则：${getProfileText(payload.retirementProfile)}`,
-		`弹性延迟退休：${formatDuration(payload.delayMonths)}`,
-		`地区模板：${getRegionTemplateText(payload.regionTemplate)}`,
-		`地方调整：${formatDuration(Math.abs(payload.regionAdjustmentMonths))}${payload.regionAdjustmentMonths < 0 ? "（减少）" : "（增加）"}`,
-		`退休年龄：${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月`,
-		policyRetirement
-			? `政策顺延：${formatDuration(policyRetirement.policyDelayMonths)}`
-			: "政策顺延：自定义",
-		`已累计缴费：${formatDuration(payload.contributedMonths)}`,
-		`最低缴费要求：${formatDuration(payload.minimumContributionMonths)}${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}`,
-		`预计达到法定退休年龄日期：${formatDate(plan.retirementDate)}`,
-		`距离法定退休年龄：${formatDuration(plan.monthsUntilAge)}`,
-		`距离最低缴费月数：${formatDuration(plan.monthsToMinContribution)}`,
-		`按连续缴纳预计满足最低缴费日期：${formatDate(plan.minimumContributionReachDate)}（当时年龄：${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}）`,
-		`还需继续缴纳社保：${formatDuration(plan.monthsUntilEligible)}`,
-		`届时累计缴费月数：${formatDuration(plan.projectedContributionMonths)}`,
+		t("copyText.heading"),
+		t("copyText.time", { time: formatNow() }),
+		t("copyText.birthDate", { date: formatDate(payload.birthDate) }),
+		t("copyText.profile", { profile: getProfileText(payload.retirementProfile) }),
+		t("copyText.delay", { duration: formatDuration(payload.delayMonths) }),
+		t("copyText.region", { region: getRegionTemplateText(payload.regionTemplate) }),
+		t("copyText.adjustment", {
+			duration: formatDuration(Math.abs(payload.regionAdjustmentMonths)),
+			dir:
+				payload.regionAdjustmentMonths < 0
+					? t("copyText.adjustmentDecrease")
+					: t("copyText.adjustmentIncrease")
+		}),
+		t("copyText.retirementAge", { age: retirementAgeText }),
+		t("copyText.policyDelay", { delay: policyDelayText }),
+		t("copyText.contributed", { duration: formatDuration(payload.contributedMonths) }),
+		t("copyText.minContribution", {
+			duration: formatDuration(payload.minimumContributionMonths),
+			baseline
+		}),
+		t("copyText.retirementDate", { date: formatDate(plan.retirementDate) }),
+		t("copyText.untilAge", { duration: formatDuration(plan.monthsUntilAge) }),
+		t("copyText.untilMin", { duration: formatDuration(plan.monthsToMinContribution) }),
+		t("copyText.reachDate", { date: reachDateText, age: ageAtReachText }),
+		t("copyText.remaining", { duration: formatDuration(plan.monthsUntilEligible) }),
+		t("copyText.projected", { duration: formatDuration(plan.projectedContributionMonths) }),
 		delayedNote,
-		COMPLIANCE_COPY.resultAiDisclaimer,
+		t("result.aiDisclaimer"),
 		"",
-		"计算步骤：",
-		`1) 按人员类型与出生年月确定政策退休年龄（含政策顺延）并叠加个人延迟月数，得到 ${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月。`,
-		`2) 用出生日期推算退休日期：${formatDate(plan.retirementDate)}。`,
-		`3) 按退休年份计算国家最低缴费要求${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}，并与地区模板配置取较高值，得到 ${formatDuration(payload.minimumContributionMonths)}。`,
-		`4) 计算 A=距退休年龄 ${formatDuration(plan.monthsUntilAge)}，B=距最低缴费 ${formatDuration(plan.monthsToMinContribution)}，按连续缴纳推算到达日期为 ${formatDate(plan.minimumContributionReachDate)}（当时年龄 ${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}）。`,
-		`5) 取 max(A, B) = ${formatDuration(plan.monthsUntilEligible)}。`
+		t("copyText.stepsTitle"),
+		t("copyText.step1", { age: retirementAgeText }),
+		t("copyText.step2", { date: formatDate(plan.retirementDate) }),
+		t("copyText.step3", {
+			baseline,
+			minContribution: formatDuration(payload.minimumContributionMonths)
+		}),
+		t("copyText.step4", {
+			untilAge: formatDuration(plan.monthsUntilAge),
+			untilMin: formatDuration(plan.monthsToMinContribution),
+			reachDate: reachDateText,
+			ageAtReach: ageAtReachText
+		}),
+		t("copyText.step5", { remaining: formatDuration(plan.monthsUntilEligible) })
 	].join("\n");
 }
 
@@ -495,18 +516,26 @@ function saveHistory(historyItems) {
 function renderHistory() {
 	const items = readHistory();
 	if (items.length === 0) {
-		historyList.innerHTML = "<li class=\"history-item\"><p>暂无记录</p></li>";
+		historyList.innerHTML = `<li class="history-item"><p>${t("history.empty")}</p></li>`;
 		return;
 	}
 
 	historyList.innerHTML = items
 		.map((item, index) => {
+			const profileText = item.retirementProfile
+				? getProfileText(item.retirementProfile)
+				: item.profileText;
+			const summary = t("history.itemSummary", {
+				time: item.time,
+				profile: profileText,
+				remaining: formatDuration(item.monthsUntilEligible)
+			});
 			return `
 				<li class="history-item">
-					<p>${item.time} | ${item.profileText} | 还需 ${formatDuration(item.monthsUntilEligible)}</p>
+					<p>${summary}</p>
 					<div class="history-actions">
-						<button type="button" class="secondary" data-action="restore" data-index="${index}">恢复这条输入</button>
-												<button type="button" class="secondary danger" data-action="delete" data-index="${index}">删除</button>
+						<button type="button" class="secondary" data-action="restore" data-index="${index}">${t("history.restore")}</button>
+						<button type="button" class="secondary danger" data-action="delete" data-index="${index}">${t("history.delete")}</button>
 					</div>
 				</li>
 			`;
@@ -539,50 +568,73 @@ function renderSteps(payload, plan, policyRetirement, policyMinimumContributionM
 		return;
 	}
 
-	const policyRetireAgeText = `${payload.retirementAgeYears} 岁 ${payload.retirementAgeMonths} 个月`;
+	const policyRetireAgeText = t("unit.age", {
+		years: payload.retirementAgeYears,
+		months: payload.retirementAgeMonths
+	});
 	const policyDelayText = policyRetirement
 		? formatDuration(policyRetirement.policyDelayMonths)
-		: "自定义";
+		: t("profile.custom");
+	const baseline = Number.isFinite(policyMinimumContributionMonths)
+		? t("result.nationalBaseline", { duration: formatDuration(policyMinimumContributionMonths) })
+		: "";
 
 	stepsList.innerHTML = `
-		<li>第 1 步：按最新退休政策与人员类型确定基础退休年龄，并计算政策顺延（月）。本次为 <strong>${policyRetireAgeText}</strong>（政策顺延：${policyDelayText}）。</li>
-		<li>第 2 步：根据出生日期 + 退休年龄，得到预计退休日期：<strong>${formatDate(plan.retirementDate)}</strong>。</li>
-		<li>第 3 步：按退休年份套用最低缴费年限规则（2030 年起每年 +6 个月，最高 20 年），并与地区模板值取较高值。本次最低要求：<strong>${formatDuration(payload.minimumContributionMonths)}</strong>${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}。</li>
-		<li>第 4 步：计算两个等待量：A=距退休年龄 <strong>${formatDuration(plan.monthsUntilAge)}</strong>，B=缴费差额 <strong>${formatDuration(plan.monthsToMinContribution)}</strong>，并按连续缴纳推算满足最低缴费日期为 <strong>${formatDate(plan.minimumContributionReachDate)}</strong>（当时年龄 <strong>${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}</strong>）。</li>
-		<li>第 5 步：取 max(A, B)，得到还需继续缴纳社保：<strong>${formatDuration(plan.monthsUntilEligible)}</strong>。</li>
+		<li>${t("steps.1", { age: policyRetireAgeText, delay: policyDelayText })}</li>
+		<li>${t("steps.2", { date: formatDate(plan.retirementDate) })}</li>
+		<li>${t("steps.3", { minContribution: formatDuration(payload.minimumContributionMonths), baseline })}</li>
+		<li>${t("steps.4", {
+			untilAge: formatDuration(plan.monthsUntilAge),
+			untilMin: formatDuration(plan.monthsToMinContribution),
+			reachDate: formatDate(plan.minimumContributionReachDate),
+			ageAtReach: formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)
+		})}</li>
+		<li>${t("steps.5", { remaining: formatDuration(plan.monthsUntilEligible) })}</li>
 	`;
 }
 
-function renderResult(payload, plan, policyRetirement, policyMinimumContributionMonths) {
+function renderResult(payload, plan, policyRetirement, policyMinimumContributionMonths, shouldFocus = true) {
+	lastRenderedState = { payload, plan, policyRetirement, policyMinimumContributionMonths };
 	resultBox.hidden = false;
 	const asOfDateText = currentAsOfDateString || formatDate(new Date());
-	resultTitle.textContent = `社保退休测算结果（截至 ${asOfDateText}）`;
-	shareHeadline.textContent = `出生日期：${formatDate(payload.birthDate)} | 预计退休日期：${formatDate(plan.retirementDate)} | 还需继续缴纳：${formatDuration(plan.monthsUntilEligible)}`;
-	shareSubtitle.textContent = `退休规则：${getProfileText(payload.retirementProfile)} | 地区模板：${getRegionTemplateText(payload.regionTemplate)} | 最低缴费要求：${formatDuration(payload.minimumContributionMonths)}`;
-	shareGeneratedAt.textContent = `生成时间：${formatNow()}`;
+	resultTitle.textContent = t("result.titleAsOf", { date: asOfDateText });
+	shareHeadline.textContent = t("result.shareHeadline", {
+		birthDate: formatDate(payload.birthDate),
+		retirementDate: formatDate(plan.retirementDate),
+		remaining: formatDuration(plan.monthsUntilEligible)
+	});
+	shareSubtitle.textContent = t("result.shareSubtitle", {
+		profile: getProfileText(payload.retirementProfile),
+		region: getRegionTemplateText(payload.regionTemplate),
+		minContribution: formatDuration(payload.minimumContributionMonths)
+	});
+	shareGeneratedAt.textContent = t("result.generatedAt", { time: formatNow() });
 
 	const delayedNote = plan.needsDelayedRetirementForContribution
-		? "达到法定退休年龄时缴费月数不足，需要继续缴纳后再退休。"
-		: "达到法定退休年龄时，缴费月数预计已满足最低要求。";
+		? t("result.delayedNote")
+		: t("result.onTimeNote");
+	const baseline = Number.isFinite(policyMinimumContributionMonths)
+		? t("result.nationalBaseline", { duration: formatDuration(policyMinimumContributionMonths) })
+		: "";
 
 	detailsList.innerHTML = `
-		<li>出生日期：<strong>${formatDate(payload.birthDate)}</strong></li>
-		<li>预计达到法定退休年龄日期：<strong>${formatDate(plan.retirementDate)}</strong></li>
-		<li>退休规则：<strong>${getProfileText(payload.retirementProfile)}</strong>（个人延迟 ${formatDuration(payload.delayMonths)}）</li>
-		<li>地区模板：<strong>${getRegionTemplateText(payload.regionTemplate)}</strong>（调整 ${payload.regionAdjustmentMonths} 个月）</li>
-		<li>政策最低缴费要求：<strong>${formatDuration(payload.minimumContributionMonths)}</strong>${Number.isFinite(policyMinimumContributionMonths) ? `（国家基线 ${formatDuration(policyMinimumContributionMonths)}）` : ""}</li>
-		<li>距离法定退休年龄：<strong>${formatDuration(plan.monthsUntilAge)}</strong></li>
-		<li>距离最低缴费月数：<strong>${formatDuration(plan.monthsToMinContribution)}</strong></li>
-		<li>按连续缴纳预计满足最低缴费日期：<strong>${formatDate(plan.minimumContributionReachDate)}</strong>（当时年龄：<strong>${formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate)}</strong>）</li>
-		<li>还需继续缴纳社保：<strong>${formatDuration(plan.monthsUntilEligible)}</strong></li>
-		<li>届时累计缴费月数：<strong>${formatDuration(plan.projectedContributionMonths)}</strong></li>
+		<li>${t("result.detail.birthDate")}<strong>${formatDate(payload.birthDate)}</strong></li>
+		<li>${t("result.detail.retirementDate")}<strong>${formatDate(plan.retirementDate)}</strong></li>
+		<li>${t("result.detail.profile")}<strong>${getProfileText(payload.retirementProfile)}</strong>${t("result.detail.personalDelay", { duration: formatDuration(payload.delayMonths) })}</li>
+		<li>${t("result.detail.regionTemplate")}<strong>${getRegionTemplateText(payload.regionTemplate)}</strong>${t("result.detail.regionAdjustment", { months: payload.regionAdjustmentMonths })}</li>
+		<li>${t("result.detail.minRequirement")}<strong>${formatDuration(payload.minimumContributionMonths)}</strong>${baseline}</li>
+		<li>${t("result.detail.monthsUntilAge")}<strong>${formatDuration(plan.monthsUntilAge)}</strong></li>
+		<li>${t("result.detail.monthsToMin")}<strong>${formatDuration(plan.monthsToMinContribution)}</strong></li>
+		<li>${t("result.detail.reachDate")}<strong>${formatDate(plan.minimumContributionReachDate)}</strong>${t("result.detail.ageAtReach", { age: formatAgeAtDate(payload.birthDate, plan.minimumContributionReachDate) })}</li>
+		<li>${t("result.detail.remaining")}<strong>${formatDuration(plan.monthsUntilEligible)}</strong></li>
+		<li>${t("result.detail.projected")}<strong>${formatDuration(plan.projectedContributionMonths)}</strong></li>
 		<li>${delayedNote}</li>
 	`;
 
 	renderSteps(payload, plan, policyRetirement, policyMinimumContributionMonths);
 	currentResultText = getResultText(payload, plan, policyRetirement, policyMinimumContributionMonths);
 	// Move focus to result heading for keyboard and screen-reader users after calculation.
-	if (resultTitle) {
+	if (shouldFocus && resultTitle) {
 		resultTitle.focus();
 	}
 }
@@ -610,6 +662,7 @@ form.addEventListener("reset", () => {
 	window.setTimeout(() => {
 		currentAsOfDateString = "";
 		currentResultText = "";
+		lastRenderedState = null;
 		resultBox.hidden = true;
 		detailsList.innerHTML = "";
 		stepsList.innerHTML = "";
@@ -619,7 +672,7 @@ form.addEventListener("reset", () => {
 		window.history.replaceState({}, "", window.location.pathname);
 		applyRetirementAgePreset();
 		applyRegionTemplatePreset();
-		showFormNotice("已重置");
+		showFormNotice(t("form.resetNotice"));
 	});
 });
 
@@ -631,16 +684,16 @@ regionAdjustmentMonthsInput.addEventListener("input", applyRegionTemplatePreset)
 
 copyButton.addEventListener("click", async () => {
 	if (!currentResultText) {
-		detailsList.innerHTML = "<li class=\"error\">请先完成一次计算。</li>";
+		detailsList.innerHTML = `<li class="error">${t("error.calculateFirst")}</li>`;
 		resultBox.hidden = false;
 		return;
 	}
 
 	try {
 		await navigator.clipboard.writeText(currentResultText);
-		openNoticeModal("结果已复制到剪贴板。", { title: "复制成功" });
+		openNoticeModal(t("modal.copyResultSuccess"), { title: t("modal.copySuccessTitle") });
 	} catch (error) {
-		openNoticeModal("复制失败，请检查浏览器权限。", { title: "复制失败" });
+		openNoticeModal(t("modal.copyResultFail"), { title: t("modal.copyFailTitle") });
 	}
 });
 
@@ -652,23 +705,23 @@ copyShareLinkButton.addEventListener("click", async () => {
 
 	try {
 		await navigator.clipboard.writeText(window.location.href);
-		openNoticeModal("分享链接已复制。对方打开后可直接看到输入参数与计算结果。", {
-			title: "复制成功"
+		openNoticeModal(t("modal.copyLinkSuccess"), {
+			title: t("modal.copySuccessTitle")
 		});
 	} catch (error) {
-		openNoticeModal("复制分享链接失败，请检查浏览器权限。", { title: "复制失败" });
+		openNoticeModal(t("modal.copyLinkFail"), { title: t("modal.copyFailTitle") });
 	}
 });
 
 downloadButton.addEventListener("click", async () => {
 	if (resultBox.hidden) {
-		detailsList.innerHTML = "<li class=\"error\">请先完成一次计算。</li>";
+		detailsList.innerHTML = `<li class="error">${t("error.calculateFirst")}</li>`;
 		resultBox.hidden = false;
 		return;
 	}
 
 	if (typeof window.html2canvas !== "function") {
-		openNoticeModal("截图组件未加载，请刷新页面后重试。", { title: "截图失败" });
+		openNoticeModal(t("modal.screenshotUnavailable"), { title: t("modal.screenshotFailTitle") });
 		return;
 	}
 
@@ -708,9 +761,9 @@ historyList.addEventListener("click", (event) => {
 
 	const items = readHistory();
 	if (action === "delete") {
-		openConfirmModal("确定删除这条历史记录吗？", {
-			title: "确认操作",
-			okText: "确认删除",
+		openConfirmModal(t("modal.deleteOne"), {
+			title: t("modal.title"),
+			okText: t("modal.confirmDelete"),
 			showCancel: true,
 			okIsDanger: true,
 			initialFocus: "cancel",
@@ -745,9 +798,9 @@ historyList.addEventListener("click", (event) => {
 });
 
 clearHistoryButton.addEventListener("click", () => {
-	openConfirmModal("确定要清空所有历史记录吗？此操作无法撤销。", {
-		title: "确认操作",
-		okText: "确认删除",
+	openConfirmModal(t("modal.clearAll"), {
+		title: t("modal.title"),
+		okText: t("modal.confirmDelete"),
 		showCancel: true,
 		okIsDanger: true,
 		initialFocus: "cancel",
@@ -780,10 +833,34 @@ document.addEventListener("keydown", (event) => {
 	}
 });
 
+function refreshLocalizedUi() {
+	applyStaticTranslations();
+	applyComplianceCopy();
+	renderHistory();
+	if (lastRenderedState && !resultBox.hidden) {
+		renderResult(
+			lastRenderedState.payload,
+			lastRenderedState.plan,
+			lastRenderedState.policyRetirement,
+			lastRenderedState.policyMinimumContributionMonths,
+			false
+		);
+	}
+}
+
+if (localeSelect) {
+	localeSelect.addEventListener("change", () => {
+		setLocale(localeSelect.value);
+		refreshLocalizedUi();
+		if (document.getElementById("birthDate").value) {
+			updateUrlWithCurrentInputs();
+		}
+	});
+}
+
 applyRetirementAgePreset();
 applyRegionTemplatePreset();
-renderHistory();
-applyComplianceCopy();
+refreshLocalizedUi();
 
 if (applyInputsFromUrlIfPresent()) {
 	form.requestSubmit();
